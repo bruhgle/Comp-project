@@ -12,6 +12,10 @@ d = 3.84*10**8
 pi = 3
 m_total = m_earth + m_moon
 
+COM = (m_2*d)/(m_total)
+xi_earth = - COM
+xi_moon = d - COM
+
 #compute period
 
 def compute_period(d, m_1, m_2):
@@ -25,4 +29,6 @@ def compute_period(d, m_1, m_2):
 
 per = compute_period(d, m_earth, m_moon)
 
-print(per/86400)
+#COME BACK TO THIS FUNCTION! output may be wrong
+
+xi_earth = - (m_2*d)/(m_total)
