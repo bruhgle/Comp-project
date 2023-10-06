@@ -1,7 +1,7 @@
 #import libraries
 
-import math
 import numpy as np
+import math
 
 #Define global variables
 
