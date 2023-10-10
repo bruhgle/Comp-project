@@ -9,26 +9,31 @@ m_earth = 5.9742 * 10**24
 m_moon = 7.35 * 10**22
 G = 6.6726 * 10**-11
 d = 3.84*10**8
-pi = 3
+pi = np.pi
 m_total = m_earth + m_moon
 
-COM = (m_2*d)/(m_total)
+COM = (m_moon * d) / m_total
 xi_earth = - COM
 xi_moon = d - COM
 
-#compute period
+def compute_period(x_1, x_2, m_1, m_2):
 
-def compute_period(d, m_1, m_2):
     m_total = m_1 + m_2
 
-    x_1 = - (m_2*d)/(m_total)
-    x_2 = d - (m_2*d)/(m_total)
+    p = 2 * pi * ((abs(x_2 - x_1) **3 ) / (G * m_total)) ** 0.5
 
-    period = 2 * pi * math.sqrt(((x_2 - x_1) ** 3) / (G * m_total))
-    return period
+    return(p)
+    
+period = compute_period(xi_earth, xi_moon, m_earth, m_moon)
 
-per = compute_period(d, m_earth, m_moon)
+print(period/86400)
 
-#COME BACK TO THIS FUNCTION! output may be wrong
+def x_movement(t):
+   
+    for i in range(0, t):
+        
+        x = np.cos((pi * t)/period)
 
-xi_earth = - (m_2*d)/(m_total)
+    return(x)
+
+print(x_movement(5000000))
