@@ -45,6 +45,8 @@ def compute_period(m_1, m_2):
 
     return(p)
 
+#define period for the earth and moon
+
 period = compute_period(bodies[0].mass, bodies[1].mass)
 
 print(period/86400)
@@ -56,12 +58,12 @@ def planet_position(distance, period, t):
 
     return x, y
 
-num_coordinates = 5
+num_coordinates = int(period)
 
 earth_list = []
 moon_list = []
 
-for i in range(0, 5):
+for i in range(0, num_coordinates):
 
     bodies[0].position = planet_position(-COM, period, i)
     bodies[1].position = planet_position(d - COM, period, i)
@@ -76,8 +78,8 @@ x_coordinates_moon = [coord[0] for coord in moon_list]
 y_coordinates_moon = [coord[1] for coord in moon_list]
 
 plt.figure(figsize=(8,8))
-plt.plot(x_coordinates_earth, y_coordinates_earth, linestyle = '-', color = 'b')
-plt.plot(x_coordinates_moon, y_coordinates_moon, linestyle = '-', color = 'r')
+plt.plot(x_coordinates_earth, y_coordinates_earth, linestyle = '-', color = 'b', label = 'Earth')
+plt.plot(x_coordinates_moon, y_coordinates_moon, linestyle = '-', color = 'r', label = 'Moon')
 
 plt.title("Orbit position position")
 plt.xlabel("x")
