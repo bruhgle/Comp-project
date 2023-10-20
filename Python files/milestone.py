@@ -2,13 +2,14 @@
 
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 
 #define initial varibles
 
-m_earth = 5.9742 * 10**24
-m_moon = 7.35 * 10**22
-G = 6.6726 * 10**-11
-d = 3.84*10**8
+m_earth = 5.9742e24
+m_moon = 7.35e22
+G = 6.6726e-11
+d = 3.84e8
 pi = np.pi
 
 #define COM for earth and moon
@@ -18,43 +19,35 @@ COM = (m_moon * d) / (m_earth + m_moon)
 #define general body class
 
 class body:
-    def __init__(self, mass, x, y, d_e, d_m, F_e, F_m):
-        self.x = x
-        self.y = y
+    def __init__(self, name, mass, position):
+        self.name = name
+        self.position = position
         self.mass = mass
-        self.d_e = d_e
-        self.d_m = d_m
-        self.F_e = F_e
-        self.F_m = F_m
 
 #define object for each body using above class
 
-earth = body(m_earth, - COM, 0, 0, d, 0, 0)
-moon = body(m_moon, d - COM, 0, d, 0, 0, 0)
-rocket = body(30000, earth.x, 4000000, 0, 0, 0, 0)
+bodies = [
+    body("Earth", 5.9742e24, [-COM, 0]), 
+    body("Moon", 7.35e22, [d - COM, 0]), 
+    body("Rocket", 30000, [-COM, 4000000])
+]
 
-rocket_to_earth = (((rocket.x - earth.x) ** 2)+((rocket.y - earth.y) ** 2)) ** 0.5
-rocket_to_moon = (((rocket.x - moon.x) ** 2)+((rocket.y - moon.y) ** 2)) ** 0.5
-F_earth = G * ((rocket.mass * earth.mass) / (rocket_to_earth ** 2))
-F_moon = G * ((rocket.mass * moon.mass) / (rocket_to_moon ** 2))
-
-#reinitialise rocket attributes to correct values
-
-rocket = body(30000, earth.x, 4000000, rocket_to_earth, rocket_to_moon, F_earth, F_moon)
+rocket_to_earth = (((bodies[2].position[0] - bodies[0].position[0]) ** 2)+((bodies[2].position[1] - bodies[0].position[1]) ** 2)) ** 0.5
+rocket_to_moon = (((bodies[2].position[0] - bodies[1].position[0]) ** 2)+((bodies[2].position[1] - bodies[1].position[1]) ** 2)) ** 0.5
 
 #define function to compute period
 
-def compute_period(x_1, x_2, m_1, m_2):
+def compute_period(m_1, m_2):
 
     m_total = m_1 + m_2
 
-    p = 2 * pi * ((abs(x_2 - x_1) **3 ) / (G * m_total)) ** 0.5
+    p = 2 * pi * ((d ** 3 ) / (G * m_total)) ** 0.5
 
     return(p)
 
-period = compute_period(earth.x, moon.x, earth.mass, moon.mass)
+period = compute_period(bodies[0].mass, bodies[1].mass)
 
-#define function to compute planet position with SHM
+print(period/86400)
 
 def planet_position(distance, period, t):
 
@@ -63,3 +56,32 @@ def planet_position(distance, period, t):
 
     return x, y
 
+num_coordinates = 5
+
+earth_list = []
+moon_list = []
+
+for i in range(0, 5):
+
+    bodies[0].position = planet_position(-COM, period, i)
+    bodies[1].position = planet_position(d - COM, period, i)
+
+    earth_list.append(bodies[0].position)
+    moon_list.append(bodies[1].position)
+
+x_coordinates_earth = [coord[0] for coord in earth_list]
+y_coordinates_earth = [coord[1] for coord in earth_list]
+
+x_coordinates_moon = [coord[0] for coord in moon_list]
+y_coordinates_moon = [coord[1] for coord in moon_list]
+
+plt.figure(figsize=(8,8))
+plt.plot(x_coordinates_earth, y_coordinates_earth, linestyle = '-', color = 'b')
+plt.plot(x_coordinates_moon, y_coordinates_moon, linestyle = '-', color = 'r')
+
+plt.title("Orbit position position")
+plt.xlabel("x")
+plt.ylabel("y")
+plt.grid(True)
+plt.legend()
+plt.show()
