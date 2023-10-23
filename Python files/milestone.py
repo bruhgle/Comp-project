@@ -33,7 +33,7 @@ r_L2 = d * (1 + (( m_moon / (3 * m_earth)) ** (1/3))) - COM
 bodies = [
     body("Earth", 5.9742e24, [-COM, 0]), 
     body("Moon", 7.35e22, [d - COM, 0]), 
-    body("Rocket", 30000, [r_L2, 0])
+    body("Rocket", 30000, [r_L2, 0.1])
 ]
 
 #define function to compute period
@@ -46,8 +46,6 @@ def compute_period(m_1, m_2):
 
     return(p)
 
-#define period for the earth and moon
-
 period = compute_period(bodies[0].mass, bodies[1].mass)
 
 #define function for planet position
@@ -59,9 +57,40 @@ def planet_position(distance, period, t):
 
     return x, y
 
+#define function to find displacement of rocket from planet {index} (0 = earth, 1 = moon)
+
+def compute_displacement(index):
+
+    r_body = [bodies[2].position[0] - bodies[index].position[0], bodies[2].position[1] - bodies[index].position[1]]
+
+    return r_body
+
+#define function to find force on rocket from planet {index}
+
+def compute_force(index):
+
+    displacement = compute_displacement(index)
+
+    distance = np.linalg.norm(displacement)
+
+    angle = math.atan2(displacement[1], displacement[0])
+
+    force = (G * bodies[2].mass * bodies[index].mass) / (distance ** 2)
+
+    x_force = - force * math.cos(angle)
+    y_force = - force * math.sin(angle)
+
+    return x_force, y_force
+
+force = compute_force(0) + compute_force(1)
+
+acceleration = [force[0] / bodies[2].mass, [force[1] / bodies[1].mass]]
+
+initial_vel = [0,(2 * pi * r_L2) / period]
+
 #create empty coordinate lists
 
-num_coordinates = 2
+num_coordinates = int(period/8)
 
 earth_list = []
 moon_list = []
@@ -69,13 +98,19 @@ rocket_list = []
 
 #loop over orbits and populate coordinate lists
 
-for i in range(0, num_coordinates):
+def time_step(steps):
 
-    bodies[0].position = planet_position(-COM, period, i)
-    bodies[1].position = planet_position(d - COM, period, i)
+    for i in range(0, steps):
 
-    earth_list.append(bodies[0].position)
-    moon_list.append(bodies[1].position)
+        bodies[0].position = planet_position(-COM, period, i)
+        bodies[1].position = planet_position(d - COM, period, i)
+
+        print(compute_force(0))
+
+        earth_list.append(bodies[0].position)
+        moon_list.append(bodies[1].position)
+
+time_step(num_coordinates)
 
 x_earth = [coord[0] for coord in earth_list]
 y_earth = [coord[1] for coord in earth_list]
@@ -95,19 +130,3 @@ plt.ylabel("y")
 plt.grid(True)
 plt.legend()
 plt.show()
-
-r_earth = [bodies[2].position[0] - bodies[0].position[0], bodies[2].position[1] - bodies[0].position[1]]
-r_moon = [bodies[2].position[0] - bodies[1].position[0], bodies[2].position[1] - bodies[1].position[1]]
-
-d_earth = np.linalg.norm(r_earth)
-d_moon = np.linalg.norm(r_moon)
-
-print(d_earth)
-
-F_earth = [( - G * bodies[2].mass * bodies[0].mass) / (r_earth[0] ** 2), ( - G * bodies[2].mass * bodies[0].mass) / (r_earth[1] ** 2)]
-F_moon = [( - G * bodies[2].mass * bodies[0].mass) / (r_moon[0] ** 2), ( - G * bodies[2].mass * bodies[0].mass) / (r_moon[1] ** 2)]
-
-acceleration = [(F_earth[0] / bodies[2].mass) + (F_moon[0] / bodies[2].mass), ((F_earth[1] / bodies[2].mass) + (F_moon[1] / bodies[2].mass))]
-
-initial_vel = [0,(2 * pi * r_L2) / period]
-
