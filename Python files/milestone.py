@@ -24,16 +24,17 @@ class body:
         self.position = position
         self.mass = mass
 
-#define object for each body using above class
+#calculate L2 point
+
+r_L2 = d * (1 + (( m_moon / (3 * m_earth)) ** (1/3))) - COM
+
+#define object for each body using body class
 
 bodies = [
     body("Earth", 5.9742e24, [-COM, 0]), 
     body("Moon", 7.35e22, [d - COM, 0]), 
-    body("Rocket", 30000, [-COM, 4000000])
+    body("Rocket", 30000, [r_L2, 0])
 ]
-
-rocket_to_earth = (((bodies[2].position[0] - bodies[0].position[0]) ** 2)+((bodies[2].position[1] - bodies[0].position[1]) ** 2)) ** 0.5
-rocket_to_moon = (((bodies[2].position[0] - bodies[1].position[0]) ** 2)+((bodies[2].position[1] - bodies[1].position[1]) ** 2)) ** 0.5
 
 #define function to compute period
 
@@ -49,7 +50,7 @@ def compute_period(m_1, m_2):
 
 period = compute_period(bodies[0].mass, bodies[1].mass)
 
-print(period/86400)
+#define function for planet position
 
 def planet_position(distance, period, t):
 
@@ -58,10 +59,15 @@ def planet_position(distance, period, t):
 
     return x, y
 
-num_coordinates = int(period)
+#create empty coordinate lists
+
+num_coordinates = 2
 
 earth_list = []
 moon_list = []
+rocket_list = []
+
+#loop over orbits and populate coordinate lists
 
 for i in range(0, num_coordinates):
 
@@ -71,19 +77,37 @@ for i in range(0, num_coordinates):
     earth_list.append(bodies[0].position)
     moon_list.append(bodies[1].position)
 
-x_coordinates_earth = [coord[0] for coord in earth_list]
-y_coordinates_earth = [coord[1] for coord in earth_list]
+x_earth = [coord[0] for coord in earth_list]
+y_earth = [coord[1] for coord in earth_list]
 
-x_coordinates_moon = [coord[0] for coord in moon_list]
-y_coordinates_moon = [coord[1] for coord in moon_list]
+x_moon = [coord[0] for coord in moon_list]
+y_moon = [coord[1] for coord in moon_list]
+
+#plot results
 
 plt.figure(figsize=(8,8))
-plt.plot(x_coordinates_earth, y_coordinates_earth, linestyle = '-', color = 'b', label = 'Earth')
-plt.plot(x_coordinates_moon, y_coordinates_moon, linestyle = '-', color = 'r', label = 'Moon')
+plt.plot(x_earth, y_earth, linestyle = '-', color = 'b', label = 'Earth')
+plt.plot(x_moon, y_moon, linestyle = '-', color = 'r', label = 'Moon')
 
-plt.title("Orbit position position")
+plt.title("Orbital positions")
 plt.xlabel("x")
 plt.ylabel("y")
 plt.grid(True)
 plt.legend()
 plt.show()
+
+r_earth = [bodies[2].position[0] - bodies[0].position[0], bodies[2].position[1] - bodies[0].position[1]]
+r_moon = [bodies[2].position[0] - bodies[1].position[0], bodies[2].position[1] - bodies[1].position[1]]
+
+d_earth = np.linalg.norm(r_earth)
+d_moon = np.linalg.norm(r_moon)
+
+print(d_earth)
+
+F_earth = [( - G * bodies[2].mass * bodies[0].mass) / (r_earth[0] ** 2), ( - G * bodies[2].mass * bodies[0].mass) / (r_earth[1] ** 2)]
+F_moon = [( - G * bodies[2].mass * bodies[0].mass) / (r_moon[0] ** 2), ( - G * bodies[2].mass * bodies[0].mass) / (r_moon[1] ** 2)]
+
+acceleration = [(F_earth[0] / bodies[2].mass) + (F_moon[0] / bodies[2].mass), ((F_earth[1] / bodies[2].mass) + (F_moon[1] / bodies[2].mass))]
+
+initial_vel = [0,(2 * pi * r_L2) / period]
+
