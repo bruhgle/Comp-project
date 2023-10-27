@@ -11,6 +11,8 @@ m_moon = 7.35e22
 G = 6.6726e-11
 d = 3.84e8
 pi = np.pi
+RK_step = 0.1
+modifier = 1
 
 #define COM for earth and moon
 
@@ -33,7 +35,7 @@ r_L2 = d * (1 + (( m_moon / (3 * m_earth)) ** (1/3))) - COM
 bodies = [
     body("Earth", 5.9742e24, [-COM, 0]), 
     body("Moon", 7.35e22, [d - COM, 0]), 
-    body("Rocket", 30000, [r_L2, 0])
+    body("Rocket", 30000, [modifier * r_L2, 0])
 ]
 
 #define function to compute period
@@ -52,8 +54,8 @@ period = compute_period(bodies[0].mass, bodies[1].mass)
 
 def planet_position(distance, period, t):
 
-    x = distance * math.cos(2 * pi * t / period)
-    y = distance * math.sin(2 * pi * t / period)
+    x = distance * math.cos(2 * pi * t * RK_step/ period)
+    y = distance * math.sin(2 * pi * t * RK_step/ period)
 
     return x, y
 
@@ -61,7 +63,7 @@ def planet_position(distance, period, t):
 
 def compute_displacement(index):
 
-    r_body = [bodies[2].position[0] - bodies[index].position[0], bodies[2].position[1] - bodies[index].position[1]]
+    r_body = [bodies[index].position[0] - bodies[2].position[0], bodies[index].position[1] + bodies[2].position[1]]
 
     return r_body
 
@@ -77,12 +79,12 @@ def compute_force(displacement, index):
 
     force = (G * bodies[2].mass * bodies[index].mass) / (distance ** 2)
 
-    x_force = - force * math.cos(angle)
-    y_force = - force * math.sin(angle)
+    x_force = force * math.cos(angle)
+    y_force = force * math.sin(angle)
 
     return x_force, y_force
 
-def runge_kutta(initial_new, old_variable, step):
+def runge_kutta(new_variable, old_variable, step):
 
     z1x = step * old_variable[0]
     z1y = step * old_variable[1]
@@ -96,28 +98,30 @@ def runge_kutta(initial_new, old_variable, step):
     z4x = step * (old_variable[0] + z3x)
     z4y = step * (old_variable[1] + z3y)
     
-    new_variable_x = initial_new[0] + (z1x + (2 * z2x) + (2 * z3x) + z4x) / 6
-    new_variable_y = initial_new[1] + (z1y + (2 * z2y) + (2 * z3y) + z4y) / 6
+    new_variable_x = new_variable[0] + (z1x + (2 * z2x) + (2 * z3x) + z4x) / 6
+    new_variable_y = new_variable[1] + (z1y + (2 * z2y) + (2 * z3y) + z4y) / 6
     
     return new_variable_x, new_variable_y
 
-RK_step = 500
+#def alt_runge_kutta(new_variable, old_variable, step):
 
-def compute_velocity(v_initial, acceleration, step):
+def taylor_position(position, velocity, acceleration, step):
 
-    velocity = runge_kutta(v_initial, acceleration, step)
+    new_position_x = position[0] + (step * velocity[0]) + ((step ** 2) * acceleration[0] / 2)
+    new_position_y = position[1] + (step * velocity[1]) + ((step ** 2) * acceleration[1] / 2)
 
-    return velocity
+    return new_position_x, new_position_y
 
-def compute_position(pos_initial, velocity, step):
-    
-    position = runge_kutta(pos_initial, velocity, step)
+def taylor_velocity(velocity, acceleration, step):
 
-    return position
+    new_velocity_x = velocity[0] + (step * acceleration[0])
+    new_velocity_y = velocity[1] + (step * acceleration[1])
+
+    return new_velocity_x, new_velocity_y
 
 #create empty coordinate lists
 
-num_coordinates = 5
+num_coordinates = 10 * int(period/8)
 
 earth_list = []
 moon_list = []
@@ -127,11 +131,18 @@ rocket_list = []
 
 def time_step(steps):
     
+    initial_vel = [0, (2 * pi * r_L2) / period]
+
+    print(initial_vel)
+    
+    velocity = initial_vel
+
+    position = bodies[2].position
+    
     for i in range(0, steps):
         bodies[0].position = planet_position(-COM, period, i)
         bodies[1].position = planet_position(d - COM, period, i)
         
-        # Calculate displacement vector for each iteration
         displacement = [compute_displacement(0), compute_displacement(1)]
         
         earth_force = compute_force(displacement, 0)
@@ -141,11 +152,9 @@ def time_step(steps):
 
         acceleration = [force[0] / bodies[2].mass, force[1] / bodies[2].mass]
 
-        initial_vel = [0, (2 * pi * r_L2) / period]
+        velocity = runge_kutta(velocity, acceleration, RK_step)
 
-        velocity = compute_velocity(initial_vel, acceleration, RK_step)
-
-        position = compute_position([r_L2, 0], velocity, RK_step)
+        position = runge_kutta(position, velocity, RK_step)
 
         bodies[2].position = position
 
