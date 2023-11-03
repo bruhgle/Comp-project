@@ -11,8 +11,8 @@ m_moon = 7.35e22
 G = 6.6726e-11
 d = 3.84e8
 pi = np.pi
-RK_step = 0.1
-modifier = 1
+RK_step = 10
+modifier = 1.006787964156102058
 
 #define COM for earth and moon
 
@@ -63,7 +63,7 @@ def planet_position(distance, period, t):
 
 def compute_displacement(index):
 
-    r_body = [bodies[index].position[0] - bodies[2].position[0], bodies[index].position[1] + bodies[2].position[1]]
+    r_body = [bodies[index].position[0] - bodies[2].position[0], bodies[index].position[1] - bodies[2].position[1]]
 
     return r_body
 
@@ -103,8 +103,6 @@ def runge_kutta(new_variable, old_variable, step):
     
     return new_variable_x, new_variable_y
 
-#def alt_runge_kutta(new_variable, old_variable, step):
-
 def taylor_position(position, velocity, acceleration, step):
 
     new_position_x = position[0] + (step * velocity[0]) + ((step ** 2) * acceleration[0] / 2)
@@ -121,7 +119,7 @@ def taylor_velocity(velocity, acceleration, step):
 
 #create empty coordinate lists
 
-num_coordinates = 10 * int(period/8)
+num_coordinates = int((1/RK_step) * period)
 
 earth_list = []
 moon_list = []
@@ -131,9 +129,7 @@ rocket_list = []
 
 def time_step(steps):
     
-    initial_vel = [0, (2 * pi * r_L2) / period]
-
-    print(initial_vel)
+    initial_vel = [0, (2 * pi * (r_L2 * modifier)/period)]
     
     velocity = initial_vel
 
@@ -152,11 +148,34 @@ def time_step(steps):
 
         acceleration = [force[0] / bodies[2].mass, force[1] / bodies[2].mass]
 
-        velocity = runge_kutta(velocity, acceleration, RK_step)
+        velocity = taylor_velocity(velocity, acceleration, RK_step)        
 
-        position = runge_kutta(position, velocity, RK_step)
+        position = taylor_position(position, velocity, acceleration, RK_step)
 
         bodies[2].position = position
+
+        for k in range(1, 100):
+
+            if i == int(k * steps/100):
+
+                print(k,"percent done")
+
+        if i == steps - 1:
+            
+            i_r = modifier * r_L2 / 1000
+            f_r = bodies[2].position[0] / 1000
+            miss_cm = (bodies[2].position[0] - (modifier * r_L2)) * 100
+            accuracy = bodies[2].position[0] / (modifier * r_L2)
+
+            formatted_ir = "{:.2f}".format(i_r)
+            formatted_fr = "{:.2f}".format(f_r)
+            formatted_miss = "{:.2f}".format(miss_cm)
+            formatted_accuracy = "{:.15f}".format(accuracy)
+
+            print("Initial radius:", formatted_ir, "km")
+            print("Final radius:", formatted_fr, "km")
+            print("Missed by", formatted_miss, "cm")
+            print("Accuracy:", formatted_accuracy)
 
         earth_list.append(bodies[0].position)
         moon_list.append(bodies[1].position)
@@ -177,12 +196,15 @@ y_rocket = [coord[1] for coord in rocket_list]
 
 plt.figure(figsize=(8,8))
 plt.plot(x_earth, y_earth, linestyle = '-', color = 'b', label = 'Earth')
-plt.plot(x_moon, y_moon, linestyle = '-', color = 'grey', label = 'Moon')
-plt.plot(x_rocket, y_rocket, linestyle = '-', color = 'r', label = 'Rocket')
+plt.plot(x_moon, y_moon, linestyle = '-', color = 'grey', label = 'Moon', marker = '')
+plt.plot(x_rocket, y_rocket, linestyle = '-', color = 'r', label = 'Rocket', marker = '')
 
 plt.title("Orbital positions")
 plt.xlabel("x")
 plt.ylabel("y")
 plt.grid(True)
 plt.legend()
+plt.axis('equal')
+plt.xlim(-5e8, 5e8)
+plt.ylim(-5e8, 5e8)
 plt.show()
