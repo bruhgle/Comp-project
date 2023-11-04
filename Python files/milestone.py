@@ -124,6 +124,8 @@ num_coordinates = int((1/RK_step) * period)
 earth_list = []
 moon_list = []
 rocket_list = []
+deviation_list = []
+time_list = []
 
 #loop over orbits and populate coordinate lists
 
@@ -154,6 +156,8 @@ def time_step(steps):
 
         bodies[2].position = position
 
+        deviation = np.linalg.norm(bodies[2].position) - (r_L2 * modifier)
+
         for k in range(1, 100):
 
             if i == int(k * steps/100):
@@ -177,9 +181,10 @@ def time_step(steps):
             print("Missed by", formatted_miss, "cm")
             print("Accuracy:", formatted_accuracy)
 
-        earth_list.append(bodies[0].position)
-        moon_list.append(bodies[1].position)
-        rocket_list.append(bodies[2].position)
+        earth_list.append([bodies[0].position[0]/1000, bodies[0].position[1]/1000])
+        moon_list.append([bodies[1].position[0]/1000, bodies[1].position[1]/1000])
+        rocket_list.append([bodies[2].position[0]/1000, bodies[2].position[1]/1000])
+        deviation_list.append(deviation/1000)
 
 time_step(num_coordinates)
 
@@ -192,19 +197,34 @@ y_moon = [coord[1] for coord in moon_list]
 x_rocket = [coord[0] for coord in rocket_list]
 y_rocket = [coord[1] for coord in rocket_list]
 
+step_size = period / num_coordinates
+
+for i in range(0, num_coordinates):
+
+    time_list.append(i * step_size)
+
+days = [t / 86400 for t in time_list]
+
 #plot results
 
 plt.figure(figsize=(8,8))
 plt.plot(x_earth, y_earth, linestyle = '-', color = 'b', label = 'Earth')
 plt.plot(x_moon, y_moon, linestyle = '-', color = 'grey', label = 'Moon', marker = '')
 plt.plot(x_rocket, y_rocket, linestyle = '-', color = 'r', label = 'Rocket', marker = '')
-
 plt.title("Orbital positions")
-plt.xlabel("x")
-plt.ylabel("y")
-plt.grid(True)
+plt.xlabel("x position (km)")
+plt.ylabel("y position (km)")
 plt.legend()
 plt.axis('equal')
-plt.xlim(-5e8, 5e8)
-plt.ylim(-5e8, 5e8)
+plt.xlim(-5e5, 5e5)
+plt.ylim(-5e5, 5e5)
+plt.show()
+
+plt.figure(figsize=(8,4))
+plt.plot(days, deviation_list, linestyle = '-', color = 'b')
+plt.title("Deviation of rocket from perfect circle")
+plt.xlabel("Time (days)")
+plt.ylabel("Deviation (km)")
+plt.legend()
+plt.ylim(-6, 0.5)
 plt.show()
