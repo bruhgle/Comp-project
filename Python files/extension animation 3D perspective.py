@@ -24,7 +24,7 @@ bodies = [
     body("earth", 7.35e22, [1.49598e11, 0, 0], 31558118, 1.49598e11),
     body("mars", 6.4169e23, [2.27956e11, 0, 0], 59355072, 2.27956e11),
     body("jupiter", 1.898e27, [7,78479e11, 0, 0], 374335689, 7.78479e11),
-    body("asteroid", 1000, [0.8e12, 0, 1e12], 0, 0)
+    body("asteroid", 1000, [1.49598e11, 0, 1e12], 0, 0)
 ]
 
 def planet_position(index, t):
@@ -77,37 +77,40 @@ def leapfrog_velocity(velocity, acceleration, step):
 
     return new_velocity_x, new_velocity_y, new_velocity_z
 
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+fig, (ax_above, ax_side) = plt.subplots(1, 2, figsize=(12, 6))
 
-# Subplot 1: +z direction (looking down on the plane)
-ax1.set_xlim([-1.5e12, 1.5e12])
-ax1.set_ylim([-1.5e12, 1.5e12])
+# Set up the initial view limits
+ax_above.set_xlim([-1.5e12, 1.5e12])
+ax_above.set_ylim([-1.5e12, 1.5e12])
 
-# Subplot 2: +y direction (side view of the plane)
-ax2.set_xlim([-1.5e12, 1.5e12])
-ax2.set_ylim([-1.5e12, 1.5e12])
+ax_side.set_xlim([-1.5e12, 1.5e12])
+ax_side.set_ylim([-1.5e12, 1.5e12])
 
-earth_radius = 1e10
-mars_radius = 2e10
-jupiter_radius = 3e10
-asteroid_radius = 1e9
-sun_radius = 1e11
+earth_size = 5
+mars_size = 5
+jupiter_size = 7
+asteroid_size = 3
+sun_radius = 5e10
 
-earth1 = ax1.scatter([bodies[1].position[0]], [bodies[1].position[1]], color='green', label='Earth')
-mars1 = ax1.scatter([bodies[2].position[0]], [bodies[2].position[1]], color='red', label='Mars')
-jupiter1 = ax1.scatter([bodies[3].position[0]], [bodies[3].position[1]], color='orange', label='Jupiter')
-asteroid1 = ax1.scatter([bodies[4].position[0]], [bodies[4].position[1]], color='blue', label='Asteroid')
-sun1 = ax1.scatter([0], [0], color='yellow', label='Sun')
+earth_above, = ax_above.plot([], [], linestyle='-', color='green', label='Earth', marker = 'o',markersize=earth_size)
+mars_above, = ax_above.plot([], [], linestyle='-', color='green', label='Mars', marker = 'o',markersize=mars_size)
+jupiter_above, = ax_above.plot([], [], linestyle='-', color='green', label='Jupiter', marker = 'o',markersize=jupiter_size)
+asteroid_above, = ax_above.plot([], [], linestyle='-', color='red', label='Asteroid', marker = 'o',markersize=asteroid_size)
 
-earth2 = ax2.scatter([bodies[1].position[2]], [bodies[1].position[0]], color='green', label='Earth')
-mars2 = ax2.scatter([bodies[2].position[2]], [bodies[2].position[0]], color='red', label='Mars')
-jupiter2 = ax2.scatter([bodies[3].position[2]], [bodies[3].position[0]], color='orange', label='Jupiter')
-asteroid2 = ax2.scatter([bodies[4].position[2]], [bodies[4].position[0]], color='blue', label='Asteroid')
-sun2 = ax2.scatter([0], [0], color='yellow', label='Sun')
+earth_side, = ax_side.plot([], [], linestyle='-', color='green', label='Earth', marker = 'o',markersize=earth_size)
+mars_side, = ax_side.plot([], [], linestyle='-', color='green', label='Mars', marker = 'o',markersize=mars_size)
+jupiter_side, = ax_side.plot([], [], linestyle='-', color='green', label='Jupiter', marker = 'o',markersize=jupiter_size)
+asteroid_side, = ax_side.plot([], [], linestyle='-', color='red', label='Asteroid', marker = 'o',markersize=asteroid_size)
+
+sun_circle_above = plt.Circle((0, 0), sun_radius, color='orange', label='Sun')
+ax_above.add_patch(sun_circle_above)
+
+sun_circle_side = plt.Circle((0, 0), sun_radius, color='orange', label='Sun')
+ax_side.add_patch(sun_circle_side)
 
 legend_font = {'family': 'DejaVu Serif', 'weight': 'normal', 'size': 9}
-ax1.legend(prop=legend_font, loc='upper right')
-ax2.legend(prop=legend_font, loc='upper right')
+ax_above.legend(prop=legend_font, loc='upper right')
+ax_side.legend(prop=legend_font, loc='upper right')
 
 velocity = [-3000, 7000, 0]
 
@@ -136,17 +139,25 @@ def update(frame):
 
     bodies[4].position = position
 
-    earth1._offsets3d = ([bodies[1].position[0]], [bodies[1].position[1]], [0])
-    mars1._offsets3d = ([bodies[2].position[0]], [bodies[2].position[1]], [0])
-    jupiter1._offsets3d = ([bodies[3].position[0]], [bodies[3].position[1]], [0])
-    asteroid1._offsets3d = ([bodies[4].position[0]], [bodies[4].position[1]], [bodies[4].position[2]])
+    x_earth, y_earth, z_earth = bodies[1].position
+    x_mars, y_mars, z_mars = bodies[2].position
+    x_jupiter, y_jupiter, z_jupiter = bodies[3].position
+    x_asteroid, y_asteroid, z_asteroid = bodies[4].position
 
-    earth2._offsets3d = ([bodies[1].position[2]], [bodies[1].position[0]], [bodies[1].position[1]])
-    mars2._offsets3d = ([bodies[2].position[2]], [bodies[2].position[0]], [bodies[2].position[1]])
-    jupiter2._offsets3d = ([bodies[3].position[2]], [bodies[3].position[0]], [bodies[3].position[1]])
-    asteroid2._offsets3d = ([bodies[4].position[2]], [bodies[4].position[0]], [bodies[4].position[1]])
+    earth_above.set_data(x_earth, y_earth)
+    mars_above.set_data(x_mars, y_mars)
+    jupiter_above.set_data(x_jupiter, y_jupiter)
+    asteroid_above.set_data(x_asteroid, y_asteroid)
 
-    return earth1, mars1, jupiter1, asteroid1, earth2, mars2, jupiter2, asteroid2
+    earth_side.set_data(x_earth, z_earth)
+    mars_side.set_data(x_mars, z_mars)
+    jupiter_side.set_data(x_jupiter, z_jupiter)
+    asteroid_side.set_data(x_asteroid, z_asteroid)
+
+    sun_circle_above.set_center((0, 0))
+    sun_circle_side.set_center((0, 0))
+
+    return earth_above, mars_above, jupiter_above, asteroid_above, earth_side, mars_side, jupiter_side, asteroid_side, sun_circle_above, sun_circle_side
 
 step_size = 100000
 

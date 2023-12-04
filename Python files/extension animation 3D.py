@@ -5,6 +5,9 @@ import math
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.animation import FuncAnimation
+from matplotlib import use
+
+plt.ion()
 
 #define global variables
 
@@ -136,12 +139,11 @@ def update(frame):
 
     return earth, mars, jupiter, asteroid
 
-num_frames = int(2e8 / 1000)
-
 step_size = 100000
 
-# Create the animation
-animation = FuncAnimation(fig, update, frames=num_frames, interval=1, blit=False)
+num_frames = int(2e8 / step_size)
 
-# Display the animation
-plt.show()
+# Create the animation
+animation = FuncAnimation(fig, update, frames=num_frames, interval=1, blit=True)
+
+plt.show(block=True)  # Add block=True to keep the plot open
