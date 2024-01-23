@@ -2,8 +2,10 @@
 
 import numpy as np
 import math
+import ephem
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from datetime import datetime, timedelta
 
 #define global variables
 
@@ -11,35 +13,100 @@ G = 6.6726e-11
 pi = np.pi
 
 class body:
-    def __init__(self, name, mass, position, period, radius, initial_angle=0):
+    def __init__(self, name, mass, position, radius):
         self.name = name
         self.position = position
         self.mass = mass
-        self.period = period
         self.radius = radius
-        self.initial_angle = initial_angle
         self.past_positions = []
         self.clearance = []
         self.separation = []
 
 bodies = [
-    body("sun", 1.988e30, [0, 0], 0, 0), 
-    body("earth", 7.35e22, [1.49598e11, 0], 31558118, 1.49598e11, initial_angle=4.55900034), #1 orbit before impact position: 0.566332, sep 30 orbit before impact position: 4.560036
-    body("mars", 6.4169e23, [2.27956e11, 0], 59355072, 2.27956e11, initial_angle=2.181659), #1 orbit before impact position: 3.7001, sep 30 orbit before impact position: 2.181659
-    body("venus", 4.86732e24, [1.08210e11, 0], 19414166, 1.08210e11, initial_angle=0.968658), #1 orbit before impact position: 5.7857665, sep 30 orbit before impact position: 0.968658
-    body("asteroid1", 26.99e9, [1.64e11, 0], 0, 0),
+    body("sun", 1.9884e30, [0, 0], 0, 0), 
+    body("earth", 5.9722e24, [0, 0], 1.49598e11), #mass errors found at [https://web.archive.org/web/20161224174302/http://asa.usno.navy.mil/static/files/2016/Astronomical_Constants_2016.pdf]
+    body("mars", 6.4169e23, [0, 0], 2.27956e11), 
+    body("venus", 4.8673e24, [0, 0], 1.08210e11),
+    body("asteroid1", 26.99e9, [0, 0], 0, 0),
     body("asteroid2", 26.99e9, [1.64e11, 0], 0, 0),
     body("asteroid3", 26.99e9, [1.64e11, 0], 0, 0),
     body("asteroid4", 26.99e9, [1.64e11, 0], 0, 0),
     body("asteroid5", 26.99e9, [1.64e11, 0], 0, 0),
+    body("mercury", 3.3010e23, [0, 0], 1.49598e11), #radius values not accurate
+    body("jupiter", 1.8985e27, [0, 0], 1.49598e11),
+    body("saturn", 5.6846e26, [0, 0], 1.49598e11),
+    body("uranus", 8.6813e25, [0, 0], 1.49598e11),
+    body("neptune", 1.0243e26, [0, 0], 1.49598e11),
 ]
 
-def planet_position(index, t):
+def planet_angle(index, startdate: datetime, t:int):
 
-    initial_angle = bodies[index].initial_angle
+    datetime_date = startdate + timedelta(seconds = t)
 
-    x = bodies[index].radius * math.cos(initial_angle + 2 * np.pi * t / bodies[index].period)
-    y = bodies[index].radius * math.sin(initial_angle + 2 * np.pi * t / bodies[index].period)
+    date_string = datetime_date.strftime('%Y-%m-%d %H:%M:%S')
+
+    date = ephem.Date(date_string)
+
+    if index == 1:
+
+        sun = ephem.Sun(date)
+
+        longitude = sun.hlon
+
+    if index == 2:
+
+        mars = ephem.Mars(date)
+
+        longitude = mars.hlong
+
+    if index == 3:
+
+        venus = ephem.Venus(date)
+
+        longitude = venus.hlong
+
+    if index == 9:
+
+        mercury = ephem.mercury(date)
+
+        longitude = mercury.hlong
+
+    if index == 10:
+
+        jupiter = ephem.jupiter(date)
+
+        longitude = jupiter.hlong
+
+    if index == 11:
+
+        saturn = ephem.saturn(date)
+
+        longitude = saturn.hlong
+
+    if index == 12:
+
+        uranus = ephem.uranus(date)
+
+        longitude = uranus.hlong
+
+    if index == 13:
+
+        neptune = ephem.neptune(date)
+
+        longitude = neptune.hlong
+
+    longitude_deg = math.degrees(longitude)
+
+    longitude_rad = math.radians(longitude_deg)
+
+    return longitude_rad
+
+def planet_position(index, startdate, t):
+
+    longitude = planet_angle(index, startdate, t)
+
+    x = bodies[index].radius * math.cos(longitude)
+    y = bodies[index].radius * math.sin(longitude)
 
     return x, y
 
@@ -86,6 +153,8 @@ def leapfrog_velocity(velocity, acceleration, step):
 
 #create empty coordinate lists
 
+position_lists = []
+
 earth_list = []
 moon_list = []
 mars_list = []
@@ -97,9 +166,11 @@ earth_final_pos = [0,0]
 venus_final_pos = [0,0]
 mars_final_pos = [0,0]
 
-def time_step(time, step_size, asteroid_index, impulse, impulse_time):
+def time_step(start_date, time, step_size, asteroid_index, impulse, impulse_time):
 
     global earth_final_pos, venus_final_pos, mars_final_pos
+
+    start_date_formatted = datetime.strptime(start_date_str, "%Y-%m-%d %H:%M:%S")
 
     clearance_list = []
     separation_list = []
@@ -113,16 +184,27 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
     num_steps = int(time / step_size)
 
     asteroid_past_positions = [[] for _ in range(len(bodies) - 1)]
+    
 
-    bodies[1].position = planet_position(1, 0)
-    bodies[2].position = planet_position(2, 0)
-    bodies[3].position = planet_position(3, 0)
+    bodies[1].position = planet_position(1, start_date_formatted, 0)
+    bodies[2].position = planet_position(2, start_date_formatted, 0)
+    bodies[3].position = planet_position(3, start_date_formatted, 0)
+    bodies[9].position = planet_position(9, start_date_formatted, 0)
+    bodies[10].position = planet_position(10, start_date_formatted, 0)
+    bodies[11].position = planet_position(11, start_date_formatted, 0)
+    bodies[12].position = planet_position(12, start_date_formatted, 0)
+    bodies[13].position = planet_position(13, start_date_formatted, 0)
 
     for i in range(0, num_steps):
 
-        bodies[1].position = planet_position(1, i * step_size)
-        bodies[2].position = planet_position(2, i * step_size)
-        bodies[3].position = planet_position(3, i * step_size)
+        bodies[1].position = planet_position(1, start_date_formatted, i * step_size)
+        bodies[2].position = planet_position(2, start_date_formatted, i * step_size)
+        bodies[3].position = planet_position(3, start_date_formatted, i * step_size)
+        bodies[9].position = planet_position(9, start_date_formatted, i * step_size)
+        bodies[10].position = planet_position(10, start_date_formatted, i * step_size)
+        bodies[11].position = planet_position(11, start_date_formatted, i * step_size)
+        bodies[12].position = planet_position(12, start_date_formatted, i * step_size)
+        bodies[13].position = planet_position(13, start_date_formatted, i * step_size)
 
         sun_acceleration = compute_acceleration(0, asteroid_index)
         earth_acceleration = compute_acceleration(1, asteroid_index)
@@ -152,6 +234,20 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
 
         earth_displacement = compute_displacement(1, asteroid_index)
 
+        for i in range(1, 4):
+
+            position_list = []
+            position_list.append(bodies[i].position)
+
+            position_lists[i].append(position_list)
+
+        for i in range(9, 14):
+
+            position_list = []
+            position_list.append(bodies[i].position)
+
+            position_lists[i].append(position_list)
+
         earth_list.append(bodies[1].position)
         mars_list.append(bodies[2].position)
         venus_list.append(bodies[3].position)
@@ -172,14 +268,16 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
     bodies[asteroid_index].clearance = clearance_list
     bodies[asteroid_index].separation = separation_list
 
-sim_time = 1.708281e8 #3.3e7 for one orbit, 1.708008e8 = time between sep30 and impact
+start_date_str = "2024-01-23 12:00:00"
+
+sim_time = 10000 #5.009e for bennu #3.3e7 for one orbit, 1.708008e8 = time between sep30 and impact
 step = 10000
 
-time_step(sim_time, step, 4, [0, 0], 0) #time step 1000 for final sim
-time_step(sim_time, step, 5, [0, -3], 1.4e7) #0.192e7 extra for 100ms change
-time_step(sim_time, step, 6, [0, -6], 1.4e7) #0.3885e7 extra for 200ms change
-time_step(sim_time, step, 7, [0, -9], 1.4e7) #0.59e7 extra for 300ms change
-time_step(sim_time, step, 8, [0, -12], 1.4e7) #0.795e7 extra for 400ms change
+time_step(start_date_str, sim_time, step, 4, [0, 0], 0) #time step 1000 for final sim
+#time_step(start_date_str, sim_time, step, 5, [0, -3], 1.4e7) #0.192e7 extra for 100ms change
+#time_step(start_date_str, sim_time, step, 6, [0, -6], 1.4e7) #0.3885e7 extra for 200ms change
+#time_step(start_date_str, sim_time, step, 7, [0, -9], 1.4e7) #0.59e7 extra for 300ms change
+#time_step(start_date_str, sim_time, step, 8, [0, -12], 1.4e7) #0.795e7 extra for 400ms change
 
 start_time = 1.6e8
 start_step = int(start_time / step)
@@ -244,6 +342,16 @@ def plot_positions():
     circle = plt.Circle((0,0), bodies[2].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
     plt.gca().add_patch(circle)
     circle = plt.Circle((0,0), bodies[3].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
+    plt.gca().add_patch(circle)
+    circle = plt.Circle((0,0), bodies[9].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
+    plt.gca().add_patch(circle)
+    circle = plt.Circle((0,0), bodies[10].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
+    plt.gca().add_patch(circle)
+    circle = plt.Circle((0,0), bodies[11].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
+    plt.gca().add_patch(circle)
+    circle = plt.Circle((0,0), bodies[12].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
+    plt.gca().add_patch(circle)
+    circle = plt.Circle((0,0), bodies[13].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
     plt.gca().add_patch(circle)
     circle = plt.Circle((earth_final_pos[0], earth_final_pos[1]), 3.84e8, edgecolor='grey', facecolor='none', linewidth=2)
     plt.gca().add_patch(circle)
@@ -320,6 +428,6 @@ def plot_clearance():
 
 plot_positions()
 
-plot_clearance()
+#plot_clearance()
 
 print(earth_final_pos)
