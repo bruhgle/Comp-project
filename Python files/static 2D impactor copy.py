@@ -24,20 +24,59 @@ class body:
 
 bodies = [
     body("sun", 1.9884e30, [0, 0], 0), 
-    body("earth", 5.9722e24, [0, 0], 1.49598e11), #mass errors found at [https://web.archive.org/web/20161224174302/http://asa.usno.navy.mil/static/files/2016/Astronomical_Constants_2016.pdf]
-    body("mars", 6.4169e23, [0, 0], 2.27956e11), 
-    body("venus", 4.8673e24, [0, 0], 1.08210e11),
+    body("Earth", 5.9722e24, [0, 0], 1.49598e11), #mass errors found at [https://web.archive.org/web/20161224174302/http://asa.usno.navy.mil/static/files/2016/Astronomical_Constants_2016.pdf]
+    body("Mars", 6.4169e23, [0, 0], 2.27956e11), 
+    body("Venus", 4.8673e24, [0, 0], 1.08210e11),
     body("asteroid1", 26.99e9, [1.64e11, 0], 0),
     body("asteroid2", 26.99e9, [1.64e11, 0], 0),
     body("asteroid3", 26.99e9, [1.64e11, 0], 0),
     body("asteroid4", 26.99e9, [1.64e11, 0], 0),
     body("asteroid5", 26.99e9, [1.64e11, 0], 0),
-    body("mercury", 3.3010e23, [0, 0], 5.7909e10), #radius values not accurate
-    body("jupiter", 1.8985e27, [0, 0], 7.78479e11),
-    body("saturn", 5.6846e26, [0, 0], 1.432041e12),
-    body("uranus", 8.6813e25, [0, 0], 2.867043e12),
-    body("neptune", 1.0243e26, [0, 0], 4.513953e12),
+    body("Mercury", 3.3010e23, [0, 0], 5.7909e10), #radius values not accurate
+    body("Jupiter", 1.8985e27, [0, 0], 7.78479e11),
+    body("Saturn", 5.6846e26, [0, 0], 1.432041e12),
+    body("Uranus", 8.6813e25, [0, 0], 2.867043e12),
+    body("Neptune", 1.0243e26, [0, 0], 4.513953e12),
 ]
+
+def compute_solar_distance(index, date):
+
+    if index == 1:
+
+        sun = ephem.Sun()
+
+        # Set the date for the calculation
+        sun.compute(date)
+
+        # Get the distance from Earth to the Sun in astronomical units (AU)
+        distance_au = sun.earth_distance
+
+        # Convert AU to kilometers (1 AU = 149,597,870.7 km)
+        distance_km = distance_au * 149597870.7
+
+        return distance_km
+
+    else:
+
+        planet_name = bodies[index].name
+
+        observer = ephem.Observer()
+        observer.lat = '0'  
+        observer.lon = '0'
+    
+        planet = getattr(ephem, planet_name)()
+
+        # Set the date for the calculation
+        observer.date = date
+        planet.compute(observer)
+
+        # Get the distance from the planet to the Sun in astronomical units (AU)
+        distance_au = planet.sun_distance
+
+        # Convert AU to kilometers (1 AU = 149,597,870.7 km)
+        distance_km = distance_au * 149597870.7
+
+    return distance_km
 
 def planet_angle(index, startdate: datetime, t:int):
 
@@ -103,10 +142,18 @@ def planet_angle(index, startdate: datetime, t:int):
 
 def planet_position(index, startdate, t):
 
+    datetime_date = startdate + timedelta(seconds = t)
+
+    date_string = datetime_date.strftime('%Y-%m-%d %H:%M:%S')
+
+    date = ephem.Date(date_string)
+
     longitude = planet_angle(index, startdate, t)
 
-    x = bodies[index].radius * math.cos(longitude)
-    y = bodies[index].radius * math.sin(longitude)
+    solar_distance = compute_solar_distance(index, date) * 1000
+
+    x = solar_distance * math.cos(longitude)
+    y = solar_distance * math.sin(longitude)
 
     return x, y
 
