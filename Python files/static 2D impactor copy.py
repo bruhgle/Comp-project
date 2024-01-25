@@ -2,10 +2,10 @@
 
 import numpy as np
 import math
-import ephem
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from datetime import datetime, timedelta
+import ephem
 
 #define global variables
 
@@ -32,11 +32,11 @@ bodies = [
     body("asteroid3", 26.99e9, [1.64e11, 0], 0),
     body("asteroid4", 26.99e9, [1.64e11, 0], 0),
     body("asteroid5", 26.99e9, [1.64e11, 0], 0),
-    body("mercury", 3.3010e23, [0, 0], 1.49598e11), #radius values not accurate
-    body("jupiter", 1.8985e27, [0, 0], 1.49598e11),
-    body("saturn", 5.6846e26, [0, 0], 1.49598e11),
-    body("uranus", 8.6813e25, [0, 0], 1.49598e11),
-    body("neptune", 1.0243e26, [0, 0], 1.49598e11),
+    body("mercury", 3.3010e23, [0, 0], 5.7909e10), #radius values not accurate
+    body("jupiter", 1.8985e27, [0, 0], 7.78479e11),
+    body("saturn", 5.6846e26, [0, 0], 1.432041e12),
+    body("uranus", 8.6813e25, [0, 0], 2.867043e12),
+    body("neptune", 1.0243e26, [0, 0], 4.513953e12),
 ]
 
 def planet_angle(index, startdate: datetime, t:int):
@@ -170,9 +170,9 @@ earth_final_pos = [0,0]
 venus_final_pos = [0,0]
 mars_final_pos = [0,0]
 
-def time_step(start_date, time, step_size, asteroid_index, impulse, impulse_time):
+def time_step(time, step_size, asteroid_index, impulse, impulse_time):
 
-    global earth_final_pos, venus_final_pos, mars_final_pos
+    global earth_final_pos, venus_final_pos, mars_final_pos, mercury_final_pos, jupiter_final_pos, saturn_final_pos, uranus_final_pos, neptune_final_pos
 
     start_date_formatted = datetime.strptime(start_date_str, "%Y-%m-%d %H:%M:%S")
 
@@ -190,8 +190,8 @@ def time_step(start_date, time, step_size, asteroid_index, impulse, impulse_time
     asteroid_past_positions = [[] for _ in range(len(bodies) - 1)]
 
     bodies[1].position = planet_position(1, start_date_formatted, 0)
-    bodies[2].position = planet_position(2, start_date_formatted, 0)
-    bodies[3].position = planet_position(3, start_date_formatted, 0)
+    bodies[2].position = planet_position(2, start_date_formatted,0)
+    bodies[3].position = planet_position(3, start_date_formatted,0)
     bodies[9].position = planet_position(9, start_date_formatted, 0)
     bodies[10].position = planet_position(10, start_date_formatted, 0)
     bodies[11].position = planet_position(11, start_date_formatted, 0)
@@ -219,10 +219,10 @@ def time_step(start_date, time, step_size, asteroid_index, impulse, impulse_time
         uranus_acceleration = compute_acceleration(12, asteroid_index)
         neptune_acceleration = compute_acceleration(13, asteroid_index)
 
-        acceleration = [sun_acceleration[0] + earth_acceleration[0] + mars_acceleration[0] + venus_acceleration[0],
-                        #+ mercury_acceleration[0] + jupiter_acceleration[0] + saturn_acceleration[0] + uranus_acceleration[0] + neptune_acceleration [0],
-                        sun_acceleration[1] + earth_acceleration[1] + mars_acceleration[1] + venus_acceleration[1]]
-                        #+ mercury_acceleration[1] + jupiter_acceleration[1] + saturn_acceleration[1] + uranus_acceleration[1] + neptune_acceleration [1]]
+        acceleration = [sun_acceleration[0] + earth_acceleration[0] + mars_acceleration[0] + venus_acceleration[0]
+                        + mercury_acceleration[0] + jupiter_acceleration[0] + saturn_acceleration[0],# + neptune_acceleration[0] + uranus_acceleration[0],
+                        sun_acceleration[1] + earth_acceleration[1] + mars_acceleration[1] + venus_acceleration[1]
+                        + mercury_acceleration[1] + jupiter_acceleration[1] + saturn_acceleration[1],]# + neptune_acceleration[1] + uranus_acceleration[0],]
 
         velocity = leapfrog_velocity(velocity, acceleration, step_size)
 
@@ -240,7 +240,7 @@ def time_step(start_date, time, step_size, asteroid_index, impulse, impulse_time
 
             if i == int(k * num_steps/100):
 
-                print("Asteroid number",asteroid_index-3, k, "percent done", bodies[4].position)
+                print("Asteroid number",asteroid_index-3, k, "percent done")
 
         earth_displacement = compute_displacement(1, asteroid_index)
 
@@ -264,6 +264,11 @@ def time_step(start_date, time, step_size, asteroid_index, impulse, impulse_time
             earth_final_pos = bodies[1].position
             mars_final_pos = bodies[2].position
             venus_final_pos = bodies[3].position
+            mercury_final_pos = bodies[9].position
+            jupiter_final_pos = bodies[10].position
+            saturn_final_pos = bodies[11].position
+            neptune_final_pos = bodies[12].position
+            uranus_final_pos = bodies[13].position
     
     bodies[asteroid_index].past_positions = asteroid_past_positions[asteroid_index - 1]
     bodies[asteroid_index].clearance = clearance_list
@@ -271,14 +276,14 @@ def time_step(start_date, time, step_size, asteroid_index, impulse, impulse_time
 
 start_date_str = "2024-01-23 12:00:00"
 
-sim_time = 5e7 #5.009e for bennu #3.3e7 for one orbit, 1.708008e8 = time between sep30 and impact
+sim_time = 1.708281e8 #3.3e7 for one orbit, 1.708008e8 = time between sep30 and impact
 step = 10000
 
-time_step(start_date_str, sim_time, step, 4, [0, 0], 0) #time step 1000 for final sim
-#time_step(start_date_str, sim_time, step, 5, [0, -3], 1.4e7) #0.192e7 extra for 100ms change
-#time_step(start_date_str, sim_time, step, 6, [0, -6], 1.4e7) #0.3885e7 extra for 200ms change
-#time_step(start_date_str, sim_time, step, 7, [0, -9], 1.4e7) #0.59e7 extra for 300ms change
-#time_step(start_date_str, sim_time, step, 8, [0, -12], 1.4e7) #0.795e7 extra for 400ms change
+time_step(sim_time, step, 4, [0, 0], 0) #time step 1000 for final sim
+#time_step(sim_time, step, 5, [0, -3], 1.4e7) #0.192e7 extra for 100ms change
+#time_step(sim_time, step, 6, [0, -6], 1.4e7) #0.3885e7 extra for 200ms change
+#time_step(sim_time, step, 7, [0, -9], 1.4e7) #0.59e7 extra for 300ms change
+#time_step(sim_time, step, 8, [0, -12], 1.4e7) #0.795e7 extra for 400ms change
 
 start_time = 1.6e8
 start_step = int(start_time / step)
@@ -291,6 +296,21 @@ y_mars = [coord[1] for coord in mars_list]
 
 x_venus = [coord[0] for coord in venus_list]
 y_venus = [coord[1] for coord in venus_list]
+
+x_mercury = [coord[0] for coord in mercury_list]
+y_mercury = [coord[1] for coord in mercury_list]
+
+x_jupiter = [coord[0] for coord in jupiter_list]
+y_jupiter = [coord[1] for coord in jupiter_list]
+
+x_saturn = [coord[0] for coord in saturn_list]
+y_saturn = [coord[1] for coord in saturn_list]
+
+x_uranus = [coord[0] for coord in uranus_list]
+y_uranus = [coord[1] for coord in uranus_list]
+
+x_neptune = [coord[0] for coord in neptune_list]
+y_neptune = [coord[1] for coord in neptune_list]
 
 x_asteroid1 = [coord[0] for coord in bodies[4].past_positions]
 y_asteroid1 = [coord[1] for coord in bodies[4].past_positions]
@@ -334,7 +354,7 @@ def plot_positions():
 
     plt.figure(figsize=(6,6))
 
-    plt.scatter(0, 0, color='yellow', marker='o', s=500, edgecolor='black', zorder=2)
+    plt.scatter(0, 0, color='yellow', marker='o', s=50, edgecolor='black', zorder=2)
 
     circle = plt.Circle((0,0), bodies[0].radius, edgecolor='orange', facecolor='none', linestyle='dashed', linewidth=0.8)
     plt.gca().add_patch(circle)
@@ -361,6 +381,12 @@ def plot_positions():
 
     plt.scatter(mars_final_pos[0], mars_final_pos[1], marker='o', color='slategray', s=50)
     plt.scatter(venus_final_pos[0], venus_final_pos[1], marker='o', color='slategray', s=50)
+    plt.scatter(earth_final_pos[0], earth_final_pos[1], marker='o', color='slategray', s=50)
+    plt.scatter(mercury_final_pos[0], mercury_final_pos[1], marker='o', color='slategray', s=50)
+    plt.scatter(jupiter_final_pos[0], jupiter_final_pos[1], marker='o', color='slategray', s=50)
+    plt.scatter(saturn_final_pos[0], saturn_final_pos[1], marker='o', color='slategray', s=50)
+    plt.scatter(uranus_final_pos[0], uranus_final_pos[1], marker='o', color='slategray', s=50)
+    plt.scatter(neptune_final_pos[0], neptune_final_pos[1], marker='o', color='slategray', s=50)
 
     plt.scatter(bodies[5].position[0], bodies[5].position[1], marker='o', color='red', s=20)
     plt.scatter(bodies[6].position[0], bodies[6].position[1], marker='o', color='darkorange', s=20)
