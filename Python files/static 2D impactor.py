@@ -267,9 +267,9 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
         neptune_acceleration = compute_acceleration(13, asteroid_index)
 
         acceleration = [sun_acceleration[0] + earth_acceleration[0] + mars_acceleration[0] + venus_acceleration[0]
-                        + mercury_acceleration[0] + jupiter_acceleration[0] + saturn_acceleration[0],# + neptune_acceleration[0] + uranus_acceleration[0],
+                        + mercury_acceleration[0] + jupiter_acceleration[0] + saturn_acceleration[0] + neptune_acceleration[0] + uranus_acceleration[0],
                         sun_acceleration[1] + earth_acceleration[1] + mars_acceleration[1] + venus_acceleration[1]
-                        + mercury_acceleration[1] + jupiter_acceleration[1] + saturn_acceleration[1],]# + neptune_acceleration[1] + uranus_acceleration[0],]
+                        + mercury_acceleration[1] + jupiter_acceleration[1] + saturn_acceleration[1] + neptune_acceleration[1] + uranus_acceleration[1]]
 
         velocity = leapfrog_velocity(velocity, acceleration, step_size)
 
