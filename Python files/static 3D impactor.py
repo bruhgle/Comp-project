@@ -6,11 +6,38 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from datetime import datetime, timedelta
 import ephem
+from poliastro.bodies import Sun
+from poliastro.twobody import Orbit
+from astroquery.jplhorizons import Horizons
 
 #define global variables
 
 G = 6.6726e-11
 pi = np.pi
+
+obj_id = '101955'
+
+# Query Horizons for orbital elements
+horizons = Horizons(obj_id, id_type='smallbody')
+elements = horizons.elements()
+
+# Extract orbital elements
+a = elements['a'][0]  # semi-major axis in AU
+ecc = elements['e'][0]  # eccentricity
+inc = elements['incl'][0]  # inclination in degrees
+raan = elements['Omega'][0]  # right ascension of ascending node in degrees
+argp = elements['w'][0]  # argument of periapsis in degrees
+nu = elements['nu'][0]  # true anomaly in degrees
+
+# Convert inclination and argument of periapsis to radians
+inc_rad = inc * (180 / 3.14159265359)
+argp_rad = argp * (180 / 3.14159265359)
+
+# Create Orbit object
+asteroid_orbit = Orbit.from_classical(Sun, a, ecc, inc_rad, raan, argp_rad, nu)
+
+# Get heliocentric ecliptic coordinates
+x_ec, y_ec, z_ec = asteroid_orbit.r.eci()
 
 class body:
     def __init__(self, name, mass, position, radius):
@@ -18,7 +45,7 @@ class body:
         self.position = position
         self.mass = mass
         self.radius = radius
-        self.past_positions = []
+        self.past_positions = [] 
         self.clearance = []
         self.separation = []
 
@@ -27,11 +54,11 @@ bodies = [
     body("Earth", 5.9722e24, [0, 0, 0], 1.49598e11), #mass errors found at [https://web.archive.org/web/20161224174302/http://asa.usno.navy.mil/static/files/2016/Astronomical_Constants_2016.pdf]
     body("Mars", 6.4169e23, [0, 0, 0], 2.27956e11), 
     body("Venus", 4.8673e24, [0, 0, 0], 1.08210e11),
-    body("asteroid1", 26.99e9, [1.64e12, 0, 0], 0),
-    body("asteroid2", 26.99e9, [1.64e11, 0, 0], 0),
-    body("asteroid3", 26.99e9, [1.64e11, 0, 0], 0), #ephemis details found at https://doi.org/10.1016/j.icarus.2021.114594
-    body("asteroid4", 26.99e9, [1.64e11, 0, 0], 0),
-    body("asteroid5", 26.99e9, [1.64e11, 0, 0], 0),
+    body("asteroid1", 26.99e9, [x_ec, y_ec, z_ec], 0),
+    body("asteroid2", 26.99e9, [x_ec, y_ec, z_ec], 0),
+    body("asteroid3", 26.99e9, [x_ec, y_ec, z_ec], 0), #ephemis details found at https://doi.org/10.1016/j.icarus.2021.114594
+    body("asteroid4", 26.99e9, [x_ec, y_ec, z_ec], 0),
+    body("asteroid5", 26.99e9, [x_ec, y_ec, z_ec], 0),
     body("Mercury", 3.3010e23, [0, 0, 0], 5.7909e10), #radius values not accurate
     body("Jupiter", 1.8985e27, [0, 0, 0], 7.78479e11),
     body("Saturn", 5.6846e26, [0, 0, 0], 1.432041e12),
