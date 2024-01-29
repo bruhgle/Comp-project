@@ -6,38 +6,15 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from datetime import datetime, timedelta
 import ephem
-from poliastro.bodies import Sun
-from poliastro.twobody import Orbit
+import spiceypy as spice
+from skyfield.api import load, Topos
 from astroquery.jplhorizons import Horizons
+from astropy.time import Time
 
 #define global variables
 
 G = 6.6726e-11
 pi = np.pi
-
-obj_id = '101955'
-
-# Query Horizons for orbital elements
-horizons = Horizons(obj_id, id_type='smallbody')
-elements = horizons.elements()
-
-# Extract orbital elements
-a = elements['a'][0]  # semi-major axis in AU
-ecc = elements['e'][0]  # eccentricity
-inc = elements['incl'][0]  # inclination in degrees
-raan = elements['Omega'][0]  # right ascension of ascending node in degrees
-argp = elements['w'][0]  # argument of periapsis in degrees
-nu = elements['nu'][0]  # true anomaly in degrees
-
-# Convert inclination and argument of periapsis to radians
-inc_rad = inc * (180 / 3.14159265359)
-argp_rad = argp * (180 / 3.14159265359)
-
-# Create Orbit object
-asteroid_orbit = Orbit.from_classical(Sun, a, ecc, inc_rad, raan, argp_rad, nu)
-
-# Get heliocentric ecliptic coordinates
-x_ec, y_ec, z_ec = asteroid_orbit.r.eci()
 
 class body:
     def __init__(self, name, mass, position, radius):
@@ -54,11 +31,11 @@ bodies = [
     body("Earth", 5.9722e24, [0, 0, 0], 1.49598e11), #mass errors found at [https://web.archive.org/web/20161224174302/http://asa.usno.navy.mil/static/files/2016/Astronomical_Constants_2016.pdf]
     body("Mars", 6.4169e23, [0, 0, 0], 2.27956e11), 
     body("Venus", 4.8673e24, [0, 0, 0], 1.08210e11),
-    body("asteroid1", 26.99e9, [x_ec, y_ec, z_ec], 0),
-    body("asteroid2", 26.99e9, [x_ec, y_ec, z_ec], 0),
-    body("asteroid3", 26.99e9, [x_ec, y_ec, z_ec], 0), #ephemis details found at https://doi.org/10.1016/j.icarus.2021.114594
-    body("asteroid4", 26.99e9, [x_ec, y_ec, z_ec], 0),
-    body("asteroid5", 26.99e9, [x_ec, y_ec, z_ec], 0),
+    body("asteroid1", 26.99e9, [0, 0, 0], 0),
+    body("asteroid2", 26.99e9, [0, 0, 0], 0),
+    body("asteroid3", 26.99e9, [0, 0, 0], 0), #ephemis details found at https://doi.org/10.1016/j.icarus.2021.114594
+    body("asteroid4", 26.99e9, [0, 0, 0], 0),
+    body("asteroid5", 26.99e9, [0, 0, 0], 0),
     body("Mercury", 3.3010e23, [0, 0, 0], 5.7909e10), #radius values not accurate
     body("Jupiter", 1.8985e27, [0, 0, 0], 7.78479e11),
     body("Saturn", 5.6846e26, [0, 0, 0], 1.432041e12),
@@ -275,7 +252,8 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
     clearance_list = []
     separation_list = []
 
-    initial_velocity = [0, 2547, 0]
+    initial_velocity = [0, 2000, 0]
+    bodies[asteroid_index].position = start_pos
 
     velocity = initial_velocity
 
@@ -338,7 +316,7 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
 
             if i == int(k * num_steps/100):
 
-                print("Asteroid number",asteroid_index-3, k, "percent done")
+                print(asteroid_index-3, k, bodies[asteroid_index].position)
 
         earth_displacement = compute_displacement(1, asteroid_index)
 
@@ -372,9 +350,10 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
     bodies[asteroid_index].clearance = clearance_list
     bodies[asteroid_index].separation = separation_list
 
-start_date_str = "2024-01-23 12:00:00"
+start_date_str = "2024-01-25 00:00:00"
+start_pos = [-1.668465347579568e11, 2.892303239718979e10, 3.742410913026657e9]
 
-sim_time = 1.708281e9 #3.3e7 for one orbit, 1.708008e8 = time between sep30 and impact
+sim_time = 8.64e7 #3.3e7 for one orbit, 1.708008e8 = time between sep30 and impact
 step = 10000
 
 time_step(sim_time, step, 4, [0, 0, 0], 0) #time step 1000 for final sim
