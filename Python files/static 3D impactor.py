@@ -6,10 +6,6 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from datetime import datetime, timedelta
 import ephem
-import spiceypy as spice
-from skyfield.api import load, Topos
-from astroquery.jplhorizons import Horizons
-from astropy.time import Time
 
 #define global variables
 
@@ -22,7 +18,7 @@ class body:
         self.position = position
         self.mass = mass
         self.radius = radius
-        self.past_positions = [] 
+        self.past_positions = []
         self.clearance = []
         self.separation = []
 
@@ -31,12 +27,12 @@ bodies = [
     body("Earth", 5.9722e24, [0, 0, 0], 1.49598e11), #mass errors found at [https://web.archive.org/web/20161224174302/http://asa.usno.navy.mil/static/files/2016/Astronomical_Constants_2016.pdf]
     body("Mars", 6.4169e23, [0, 0, 0], 2.27956e11), 
     body("Venus", 4.8673e24, [0, 0, 0], 1.08210e11),
-    body("asteroid1", 26.99e9, [0, 0, 0], 0),
-    body("asteroid2", 26.99e9, [0, 0, 0], 0),
-    body("asteroid3", 26.99e9, [0, 0, 0], 0), #ephemis details found at https://doi.org/10.1016/j.icarus.2021.114594
-    body("asteroid4", 26.99e9, [0, 0, 0], 0),
-    body("asteroid5", 26.99e9, [0, 0, 0], 0),
-    body("Mercury", 3.3010e23, [0, 0, 0], 5.7909e10), #radius values not accurate
+    body("asteroid1", 7.329e10, [1.64e12, 0, 0], 0),
+    body("asteroid2", 7.329e10, [1.64e11, 0, 0], 0),
+    body("asteroid3", 7.329e10, [1.64e11, 0, 0], 0), #ephemis details found at https://doi.org/10.1016/j.icarus.2021.114594
+    body("asteroid4", 7.329e10, [1.64e11, 0, 0], 0),
+    body("asteroid5", 7.329e10, [1.64e11, 0, 0], 0),
+    body("Mercury", 3.3010e23, [0, 0, 0], 5.7909e10), 
     body("Jupiter", 1.8985e27, [0, 0, 0], 7.78479e11),
     body("Saturn", 5.6846e26, [0, 0, 0], 1.432041e12),
     body("Uranus", 8.6813e25, [0, 0, 0], 2.867043e12),
@@ -83,6 +79,8 @@ def compute_solar_distance(index, date):
     return distance_km
 
 def planet_angle(index, startdate: datetime, t:int):
+
+    global datetime_date
 
     datetime_date = startdate + timedelta(seconds = t)
 
@@ -252,7 +250,7 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
     clearance_list = []
     separation_list = []
 
-    initial_velocity = [0, 2000, 0]
+    initial_velocity = start_vel
     bodies[asteroid_index].position = start_pos
 
     velocity = initial_velocity
@@ -316,7 +314,7 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
 
             if i == int(k * num_steps/100):
 
-                print(asteroid_index-3, k, bodies[asteroid_index].position)
+                print("Asteroid number",asteroid_index-3, k, "percent done")
 
         earth_displacement = compute_displacement(1, asteroid_index)
 
@@ -350,19 +348,20 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
     bodies[asteroid_index].clearance = clearance_list
     bodies[asteroid_index].separation = separation_list
 
-start_date_str = "2024-01-25 00:00:00"
-start_pos = [-1.668465347579568e11, 2.892303239718979e10, 3.742410913026657e9]
+start_date_str = "2024-09-24 00:00:00"
+start_pos = [-1.590269546178139E+011,   3.858859839484540E+10,  -5.805981106895613E+09]
+start_vel = [-4.677768707144813E+03,  -2.537175688165507E+04,   1.242563246429153E+03]
 
-sim_time = 8.64e7 #3.3e7 for one orbit, 1.708008e8 = time between sep30 and impact
-step = 10000
+sim_time = 1.435968e+8
+step = 1000
 
 time_step(sim_time, step, 4, [0, 0, 0], 0) #time step 1000 for final sim
 #time_step(sim_time, step, 5, [0, -3, 0], 1.4e7) #0.192e7 extra for 100ms change
-#time_step(sim_time, step, 6, [0, -6, 0], 1.4e7) #0.3885e7 extra for 200ms change
 #time_step(sim_time, step, 7, [0, -9, 0], 1.4e7) #0.59e7 extra for 300ms change
+#time_step(sim_time, step, 6, [0, -6, 0], 1.4e7) #0.3885e7 extra for 200ms change
 #time_step(sim_time, step, 8, [0, -12, 0], 1.4e7) #0.795e7 extra for 400ms change
 
-start_time = 1.6e8
+start_time = 0
 start_step = int(start_time / step)
 
 x_earth = [coord[0] for coord in earth_list]
@@ -548,8 +547,8 @@ def plot_clearance():
 
     plt.show()
 
+print(datetime_date)
+
 plot_positions()
 
 #plot_clearance()
-
-print(earth_final_pos)
