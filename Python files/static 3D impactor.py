@@ -14,13 +14,14 @@ pi = np.pi
 
 start_date_str = "2024-02-03 00:00:00"
 start_pos = [-4.172713508473304E+10,  -1.220450048219333E+11,   5.552897142448820E+09]
-start_pos_sigma = [7.35889211E+02, 1.64579658E+02, 4.66454408E+02]
+start_pos_sigma = [7.35889211E+05, 1.64579658E+05, 4.66454408E+05]
 start_vel = [3.294384429462851E+04,  -4.690462000888102E+03,   1.029682724966483E+03]
 start_vel_sigma = [9.30445452E-05, 1.49525380E-04, 8.36387188E-05]
 
-sim_time = 1.7e+8
-step = 1000
+sim_time = 1.7e+7
+step = 10000
 start_time = 0
+num_asteroids = 100
 
 class body:
     def __init__(self, name, mass, position, asteroid_acceleration, radius):
@@ -233,14 +234,13 @@ def leapfrog_velocity(velocity, acceleration, step):
 
     return new_velocity_x, new_velocity_y, new_velocity_z
 
-for i in range(1, 201):
+for i in range(1, 1 + num_asteroids):
     asteroid_name = f"asteroid{i}"
-    asteroid_position = [1.64e11, 0, 0]  # Adjust the position as needed
     randposx = random_value(start_pos[0],start_pos_sigma[0])
     randposy = random_value(start_pos[1],start_pos_sigma[1])
     randposz = random_value(start_pos[1],start_pos_sigma[1])
     randmass = 4.0e+10
-    asteroid = body(asteroid_name, randmass, asteroid_position, [randposx, randposy, randposz], 0)
+    asteroid = body(asteroid_name, randmass, [randposx, randposy, randposz], [0,0,0], 0)
     bodies.append(asteroid)
 
 #create empty coordinate lists
@@ -264,6 +264,12 @@ earth_final_pos = [0,0,0]
 venus_final_pos = [0,0,0]
 mars_final_pos = [0,0,0]
 
+print(bodies[9].position)
+print(bodies[10].position)
+print(bodies[11].position)
+print(bodies[12].position)
+print(bodies[13].position)
+
 def time_step(time, step_size, asteroid_index, impulse, impulse_time):
 
     global earth_final_pos, venus_final_pos, mars_final_pos, mercury_final_pos, jupiter_final_pos, saturn_final_pos, uranus_final_pos, neptune_final_pos
@@ -274,7 +280,6 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
     separation_list = []
 
     initial_velocity = start_vel
-    bodies[asteroid_index].position = start_pos
 
     velocity = initial_velocity
 
@@ -325,11 +330,11 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
 
         bodies[asteroid_index].position = position
 
-        for k in range(1, 100):
+        for k in range(1, 3):
 
-            if i == int(k * num_steps/100):
+            if i == int(k * num_steps/3):
 
-                print(asteroid_index-8, k, "%", "done")
+                print(asteroid_index-8, bodies[asteroid_index].position)
 
         earth_displacement = compute_displacement(1, asteroid_index)
 
@@ -363,9 +368,9 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
     bodies[asteroid_index].clearance = clearance_list
     bodies[asteroid_index].separation = separation_list
 
-for i in range(200):
+for i in range(num_asteroids):
 
-    time_step(sim_time, step, 9+i, [0, 0, 0], 0)
+    time_step(sim_time, step, 9 + i, [0, 0, 0], 0)
 
 start_step = int(start_time / step)
 
@@ -401,51 +406,28 @@ x_neptune = [coord[0] for coord in neptune_list]
 y_neptune = [coord[1] for coord in neptune_list]
 z_neptune = [coord[2] for coord in neptune_list]
 
-x_asteroid1 = [coord[0] for coord in bodies[9].past_positions]
-y_asteroid1 = [coord[1] for coord in bodies[9].past_positions]
-z_asteroid1 = [coord[2] for coord in bodies[9].past_positions]
+x_asteroids = []
+y_asteroids = []
+z_asteroids = []
 
-x_asteroid1 = x_asteroid1[start_step:]
-y_asteroid1 = y_asteroid1[start_step:]
-z_asteroid1 = z_asteroid1[start_step:]
+for i in range(9, 9 + num_asteroids):
+    x_asteroid = [coord[0] for coord in bodies[i].past_positions]
+    y_asteroid = [coord[1] for coord in bodies[i].past_positions]
+    z_asteroid = [coord[2] for coord in bodies[i].past_positions]
 
-x_asteroid2 = [coord[0] for coord in bodies[10].past_positions]
-y_asteroid2 = [coord[1] for coord in bodies[10].past_positions]
-z_asteroid2 = [coord[2] for coord in bodies[10].past_positions]
+    x_asteroid = x_asteroid[start_step:]
+    y_asteroid = y_asteroid[start_step:]
+    z_asteroid = z_asteroid[start_step:]
 
-x_asteroid2 = x_asteroid2[start_step:]
-y_asteroid2 = y_asteroid2[start_step:]
-z_asteroid2 = z_asteroid2[start_step:]
+    x_asteroids.append(x_asteroid)
+    y_asteroids.append(y_asteroid)
+    z_asteroids.append(z_asteroid)
 
-x_asteroid3 = [coord[0] for coord in bodies[11].past_positions]
-y_asteroid3 = [coord[1] for coord in bodies[11].past_positions]
-z_asteroid3 = [coord[2] for coord in bodies[11].past_positions]
-
-x_asteroid3 = x_asteroid3[start_step:]
-y_asteroid3 = y_asteroid3[start_step:]
-z_asteroid3 = z_asteroid3[start_step:]
-
-x_asteroid4 = [coord[0] for coord in bodies[12].past_positions]
-y_asteroid4 = [coord[1] for coord in bodies[12].past_positions]
-z_asteroid4 = [coord[2] for coord in bodies[12].past_positions]
-
-x_asteroid4 = x_asteroid4[start_step:]
-y_asteroid4 = y_asteroid4[start_step:]
-z_asteroid4 = z_asteroid4[start_step:]
-
-x_asteroid5 = [coord[0] for coord in bodies[13].past_positions]
-y_asteroid5 = [coord[1] for coord in bodies[13].past_positions]
-z_asteroid5 = [coord[2] for coord in bodies[13].past_positions]
-
-x_asteroid5 = x_asteroid5[start_step:]
-y_asteroid5 = y_asteroid5[start_step:]
-z_asteroid5 = z_asteroid5[start_step:]
-
-clearance_diff4 = [bi - ai for ai, bi in zip(bodies[4].clearance, bodies[4].clearance)]
-clearance_diff5 = [bi - ai for ai, bi in zip(bodies[4].clearance, bodies[5].clearance)]
-clearance_diff6 = [bi - ai for ai, bi in zip(bodies[4].clearance, bodies[6].clearance)]
-clearance_diff7 = [bi - ai for ai, bi in zip(bodies[4].clearance, bodies[7].clearance)]
-clearance_diff8 = [bi - ai for ai, bi in zip(bodies[4].clearance, bodies[8].clearance)]
+clearance_diff4 = [bi - ai for ai, bi in zip(bodies[3].clearance, bodies[4].clearance)]
+clearance_diff5 = [bi - ai for ai, bi in zip(bodies[3].clearance, bodies[5].clearance)]
+clearance_diff6 = [bi - ai for ai, bi in zip(bodies[3].clearance, bodies[6].clearance)]
+clearance_diff7 = [bi - ai for ai, bi in zip(bodies[3].clearance, bodies[7].clearance)]
+clearance_diff8 = [bi - ai for ai, bi in zip(bodies[3].clearance, bodies[8].clearance)]
 
 days = [t / 86400 for t in time_list]
 
@@ -487,17 +469,15 @@ def plot_positions():
     plt.scatter(uranus_final_pos[0], uranus_final_pos[1], marker='o', color='slategray', s=50)
     plt.scatter(neptune_final_pos[0], neptune_final_pos[1], marker='o', color='slategray', s=50)
 
-    plt.scatter(bodies[9].position[0], bodies[9].position[1], marker='o', color='maroon', s=2)
-    plt.scatter(bodies[10].position[0], bodies[10].position[1], marker='o', color='red', s=20)
-    plt.scatter(bodies[11].position[0], bodies[11].position[1], marker='o', color='darkorange', s=20)
-    plt.scatter(bodies[12].position[0], bodies[12].position[1], marker='o', color='greenyellow', s=20)
-    plt.scatter(bodies[13].position[0], bodies[13].position[1], marker='o', color='green', s=20)
+    colors = ['red', 'green', 'blue', 'orange', 'purple', 'pink', 'cyan', 'brown', 'gray', 'black']
 
-    plt.plot(x_asteroid1, y_asteroid1, linestyle='-', color='maroon', label='Undiverted asteroid', marker='')
-    plt.plot(x_asteroid2, y_asteroid2, linestyle='-', color='red', label='8km/s diversion', marker='')
-    plt.plot(x_asteroid3, y_asteroid3, linestyle='-', color='darkorange', label='16km/s diversion', marker='')
-    plt.plot(x_asteroid4, y_asteroid4, linestyle='-', color='greenyellow', label='24km/s diversion', marker='')
-    plt.plot(x_asteroid5, y_asteroid5, linestyle='-', color='green', label='32km/s diversion', marker='')
+    for i in range(9,num_asteroids+9):
+        
+        plt.scatter(bodies[i].position[0], bodies[i].position[1], marker='o', color=colors[i % len(colors)], s=20)
+
+    for i in range(num_asteroids):
+
+        plt.plot(x_asteroids[i], y_asteroids[i], linestyle='-', color=colors[i % len(colors)], marker='')
 
     plt.title("", fontdict={'family': 'DejaVu Serif', 'color':  'black', 'weight': 'normal', 'size': 11})
     plt.xlabel("x position (10  m)", fontdict={'family': 'DejaVu Serif', 'color':  'black', 'weight': 'normal', 'size': 11})
@@ -505,18 +485,18 @@ def plot_positions():
 
     legend_font = {'family': 'DejaVu Serif', 'weight': 'normal', 'size': 9}
 
-    legend_elements = [
-        Line2D([0], [0], linewidth=2, linestyle='-', color='maroon', markersize=10, label='Undiverted asteroid'),
-        Line2D([0], [0], linewidth=2, linestyle='-', color='red', markersize=10, label='8km/s diversion'),
-        Line2D([0], [0], linewidth=2, linestyle='-', color='darkorange', markersize=10, label='16km/s diversion'),
-        Line2D([0], [0], linewidth=2, linestyle='-', color='greenyellow', markersize=10, label='24km/s diversion'),
-        Line2D([0], [0], linewidth=2, linestyle='-', color='green', markersize=10, label='32km/s diversion'),
-        Line2D([0], [0], linewidth=2, linestyle='-', color='grey', markersize=10, label='Lunar orbit'),
-        Line2D([0], [0], linewidth=2, linestyle='-', color='black', markersize=10, label='Earth orbit'),
-        Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10, label='Earth'),
-    ]
+    #legend_elements = [
+        #Line2D([0], [0], linewidth=2, linestyle='-', color='maroon', markersize=10, label='Undiverted asteroid'),
+        #Line2D([0], [0], linewidth=2, linestyle='-', color='red', markersize=10, label='8km/s diversion'),
+        #Line2D([0], [0], linewidth=2, linestyle='-', color='darkorange', markersize=10, label='16km/s diversion'),
+        #Line2D([0], [0], linewidth=2, linestyle='-', color='green', markersize=10, label='32km/s diversion'),
+        #Line2D([0], [0], linewidth=2, linestyle='-', color='greenyellow', markersize=10, label='24km/s diversion'),
+        #Line2D([0], [0], linewidth=2, linestyle='-', color='grey', markersize=10, label='Lunar orbit'),
+        #Line2D([0], [0], linewidth=2, linestyle='-', color='black', markersize=10, label='Earth orbit'),
+        #Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10, label='Earth'),
+    #]
 
-    plt.legend(handles=legend_elements, prop = legend_font, loc = 'upper left')
+    #plt.legend(handles=legend_elements, prop = legend_font, loc = 'upper left')
     plt.axis('equal')
     plt.show()
 
