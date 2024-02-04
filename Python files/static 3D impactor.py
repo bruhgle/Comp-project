@@ -12,10 +12,21 @@ import ephem
 G = 6.6726e-11
 pi = np.pi
 
+start_date_str = "2024-02-03 00:00:00"
+start_pos = [-4.172713508473304E+10,  -1.220450048219333E+11,   5.552897142448820E+09]
+start_pos_sigma = [7.35889211E+02, 1.64579658E+02, 4.66454408E+02]
+start_vel = [3.294384429462851E+04,  -4.690462000888102E+03,   1.029682724966483E+03]
+start_vel_sigma = [9.30445452E-05, 1.49525380E-04, 8.36387188E-05]
+
+sim_time = 1.7e+8
+step = 1000
+start_time = 0
+
 class body:
-    def __init__(self, name, mass, position, radius):
+    def __init__(self, name, mass, position, asteroid_acceleration, radius):
         self.name = name
         self.position = position
+        self.asteroid_acceleration = asteroid_acceleration
         self.mass = mass
         self.radius = radius
         self.past_positions = []
@@ -23,25 +34,25 @@ class body:
         self.separation = []
 
 bodies = [
-    body("sun", 1.9884e30, [0, 0, 0], 0), 
-    body("Earth", 5.9722e24, [0, 0, 0], 1.49598e11), #mass errors found at [https://web.archive.org/web/20161224174302/http://asa.usno.navy.mil/static/files/2016/Astronomical_Constants_2016.pdf]
-    body("Mars", 6.4169e23, [0, 0, 0], 2.27956e11), 
-    body("Venus", 4.8673e24, [0, 0, 0], 1.08210e11),
-    body("asteroid1", 7.329e10, [1.64e12, 0, 0], 0),
-    body("asteroid2", 7.329e10, [1.64e11, 0, 0], 0),
-    body("asteroid3", 7.329e10, [1.64e11, 0, 0], 0), #ephemis details found at https://doi.org/10.1016/j.icarus.2021.114594
-    body("asteroid4", 7.329e10, [1.64e11, 0, 0], 0),
-    body("asteroid5", 7.329e10, [1.64e11, 0, 0], 0),
-    body("Mercury", 3.3010e23, [0, 0, 0], 5.7909e10), 
-    body("Jupiter", 1.8985e27, [0, 0, 0], 7.78479e11),
-    body("Saturn", 5.6846e26, [0, 0, 0], 1.432041e12),
-    body("Uranus", 8.6813e25, [0, 0, 0], 2.867043e12),
-    body("Neptune", 1.0243e26, [0, 0, 0], 4.513953e12),
+    body("sun", 1.9884e30, [0, 0, 0], [0, 0, 0], 0),                #0   
+    body("Mercury", 3.3010e23, [0, 0, 0], [0, 0, 0], 5.7909e10),    #1
+    body("Venus", 4.8673e24, [0, 0, 0], [0, 0, 0], 1.08210e11),     #2
+    body("Earth", 5.9722e24, [0, 0, 0], [0, 0, 0], 1.49598e11),     #3           #mass errors found at [https://web.archive.org/web/20161224174302/http://asa.usno.navy.mil/static/files/2016/Astronomical_Constants_2016.pdf]
+    body("Mars", 6.4169e23, [0, 0, 0], [0, 0, 0], 2.27956e11),      #4
+    body("Jupiter", 1.8985e27, [0, 0, 0], [0, 0, 0], 7.78479e11),   #5
+    body("Saturn", 5.6846e26, [0, 0, 0], [0, 0, 0], 1.432041e12),   #6
+    body("Uranus", 8.6813e25, [0, 0, 0], [0, 0, 0], 2.867043e12),   #7
+    body("Neptune", 1.0243e26, [0, 0, 0], [0, 0, 0], 4.513953e12),  #8
 ]
+
+def random_value(center, sigma):
+    
+    random_value = np.random.normal(loc=center, scale=sigma)
+    return random_value
 
 def compute_solar_distance(index, date):
 
-    if index == 1:
+    if index == 3:
 
         sun = ephem.Sun()
 
@@ -90,54 +101,54 @@ def planet_angle(index, startdate: datetime, t:int):
 
     if index == 1:
 
-        sun = ephem.Sun(date)
+        mercury = ephem.Mercury(date)
 
-        longitude = sun.hlon
-        latitude = sun.hlat
+        longitude = mercury.hlon
+        latitude = mercury.hlat
 
     if index == 2:
-
-        mars = ephem.Mars(date)
-
-        longitude = mars.hlong
-        latitude = mars.hlat
-
-    if index == 3:
 
         venus = ephem.Venus(date)
 
         longitude = venus.hlong
         latitude = venus.hlat
 
-    if index == 9:
+    if index == 3:
 
-        mercury = ephem.Mercury(date)
+        sun = ephem.Sun(date)
 
-        longitude = mercury.hlong
-        latitude = mercury.hlat
+        longitude = sun.hlong
+        latitude = sun.hlat
 
-    if index == 10:
+    if index == 4:
+
+        mars = ephem.Mars(date)
+
+        longitude = mars.hlong
+        latitude = mars.hlat
+
+    if index == 5:
 
         jupiter = ephem.Jupiter(date)
 
         longitude = jupiter.hlong
         latitude = jupiter.hlat
 
-    if index == 11:
+    if index == 6:
 
         saturn = ephem.Saturn(date)
 
         longitude = saturn.hlong
         latitude = saturn.hlat
 
-    if index == 12:
+    if index == 7:
 
         uranus = ephem.Uranus(date)
 
         longitude = uranus.hlong
         latitude = uranus.hlat
 
-    if index == 13:
+    if index == 8:
 
         neptune = ephem.Neptune(date)
 
@@ -222,6 +233,16 @@ def leapfrog_velocity(velocity, acceleration, step):
 
     return new_velocity_x, new_velocity_y, new_velocity_z
 
+for i in range(1, 201):
+    asteroid_name = f"asteroid{i}"
+    asteroid_position = [1.64e11, 0, 0]  # Adjust the position as needed
+    randposx = random_value(start_pos[0],start_pos_sigma[0])
+    randposy = random_value(start_pos[1],start_pos_sigma[1])
+    randposz = random_value(start_pos[1],start_pos_sigma[1])
+    randmass = 4.0e+10
+    asteroid = body(asteroid_name, randmass, asteroid_position, [randposx, randposy, randposz], 0)
+    bodies.append(asteroid)
+
 #create empty coordinate lists
 
 earth_list = []
@@ -236,6 +257,8 @@ uranus_list = []
 
 time_list = []
 impulse_coords = []
+
+acceleration_list = []
 
 earth_final_pos = [0,0,0]
 venus_final_pos = [0,0,0]
@@ -261,35 +284,25 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
 
     asteroid_past_positions = [[] for _ in range(len(bodies) - 1)]
 
-    bodies[1].position = planet_position(1, start_date_formatted, 0)
-    bodies[2].position = planet_position(2, start_date_formatted,0)
-    bodies[3].position = planet_position(3, start_date_formatted,0)
-    bodies[9].position = planet_position(9, start_date_formatted, 0)
-    bodies[10].position = planet_position(10, start_date_formatted, 0)
-    bodies[11].position = planet_position(11, start_date_formatted, 0)
-    bodies[12].position = planet_position(12, start_date_formatted, 0)
-    bodies[13].position = planet_position(13, start_date_formatted, 0)
+    for i in range(1,9):
+        
+        bodies[i].position = planet_position(i, start_date_formatted, 0)
 
     for i in range(0, num_steps):
 
-        bodies[1].position = planet_position(1, start_date_formatted, i * step_size)
-        bodies[2].position = planet_position(2, start_date_formatted, i * step_size)
-        bodies[3].position = planet_position(3, start_date_formatted, i * step_size)
-        bodies[9].position = planet_position(9, start_date_formatted, i * step_size)
-        bodies[10].position = planet_position(10, start_date_formatted, i * step_size)
-        bodies[11].position = planet_position(11, start_date_formatted, i * step_size)
-        bodies[12].position = planet_position(12, start_date_formatted, i * step_size)
-        bodies[13].position = planet_position(13, start_date_formatted, i * step_size)
+        for j in range(1,9):
+
+            bodies[j].position = planet_position(j, start_date_formatted, i * step_size)
 
         sun_acceleration = compute_acceleration(0, asteroid_index)
-        earth_acceleration = compute_acceleration(1, asteroid_index)
-        mars_acceleration = compute_acceleration(2, asteroid_index)
-        venus_acceleration = compute_acceleration(3, asteroid_index)
-        mercury_acceleration = compute_acceleration(9, asteroid_index)
-        jupiter_acceleration = compute_acceleration(10, asteroid_index)
-        saturn_acceleration = compute_acceleration(11, asteroid_index)
-        uranus_acceleration = compute_acceleration(12, asteroid_index)
-        neptune_acceleration = compute_acceleration(13, asteroid_index)
+        mercury_acceleration = compute_acceleration(1, asteroid_index)
+        venus_acceleration = compute_acceleration(2, asteroid_index)
+        earth_acceleration = compute_acceleration(3, asteroid_index)
+        mars_acceleration = compute_acceleration(4, asteroid_index)
+        jupiter_acceleration = compute_acceleration(5, asteroid_index)
+        saturn_acceleration = compute_acceleration(6, asteroid_index)
+        uranus_acceleration = compute_acceleration(7, asteroid_index)
+        neptune_acceleration = compute_acceleration(8, asteroid_index)
 
         acceleration = [sun_acceleration[0] + earth_acceleration[0] + mars_acceleration[0] + venus_acceleration[0]
                         + mercury_acceleration[0] + jupiter_acceleration[0] + saturn_acceleration[0] + neptune_acceleration[0] + uranus_acceleration[0],
@@ -304,7 +317,9 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
 
         if i == int(impulse_time / step_size):
 
-            velocity = [velocity[0] + impulse[0], velocity[1] + impulse[1], velocity[2] + impulse[2]]
+            velocity = [velocity[0] + impulse[0],
+                        velocity[1] + impulse[1],
+                        velocity[2] + impulse[2]]
 
             impulse_coords.append(bodies[asteroid_index].position)
 
@@ -314,54 +329,44 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
 
             if i == int(k * num_steps/100):
 
-                print("Asteroid number",asteroid_index-3, k, "percent done")
+                print(asteroid_index-8, k, "%", "done")
 
         earth_displacement = compute_displacement(1, asteroid_index)
 
-        earth_list.append(bodies[1].position)
-        mars_list.append(bodies[2].position)
-        venus_list.append(bodies[3].position)
-        mercury_list.append(bodies[9].position)
-        jupiter_list.append(bodies[10].position)
-        saturn_list.append(bodies[11].position)
-        uranus_list.append(bodies[12].position)
-        neptune_list.append(bodies[13].position)
+        mercury_list.append(bodies[1].position)
+        venus_list.append(bodies[2].position)
+        earth_list.append(bodies[3].position)
+        mars_list.append(bodies[4].position)
+        jupiter_list.append(bodies[5].position)
+        saturn_list.append(bodies[6].position)
+        uranus_list.append(bodies[7].position)
+        neptune_list.append(bodies[8].position)
         clearance_list.append(np.linalg.norm(earth_displacement))
 
         separation = compute_displacement(4, asteroid_index)
         
         asteroid_past_positions[asteroid_index - 1].append(bodies[asteroid_index].position)
 
-        if asteroid_index == 4:
+        if asteroid_index == 9:
 
             time_list.append(i * step_size)
-            earth_final_pos = bodies[1].position
-            mars_final_pos = bodies[2].position
-            venus_final_pos = bodies[3].position
-            mercury_final_pos = bodies[9].position
-            jupiter_final_pos = bodies[10].position
-            saturn_final_pos = bodies[11].position
-            neptune_final_pos = bodies[12].position
-            uranus_final_pos = bodies[13].position
+            mercury_final_pos = bodies[1].position
+            venus_final_pos = bodies[2].position
+            earth_final_pos = bodies[3].position
+            mars_final_pos = bodies[4].position
+            jupiter_final_pos = bodies[5].position
+            saturn_final_pos = bodies[6].position
+            neptune_final_pos = bodies[7].position
+            uranus_final_pos = bodies[8].position
     
     bodies[asteroid_index].past_positions = asteroid_past_positions[asteroid_index - 1]
     bodies[asteroid_index].clearance = clearance_list
     bodies[asteroid_index].separation = separation_list
 
-start_date_str = "2024-09-24 00:00:00"
-start_pos = [-1.590269546178139E+011,   3.858859839484540E+10,  -5.805981106895613E+09]
-start_vel = [-4.677768707144813E+03,  -2.537175688165507E+04,   1.242563246429153E+03]
+for i in range(200):
 
-sim_time = 1.435968e+8
-step = 1000
+    time_step(sim_time, step, 9+i, [0, 0, 0], 0)
 
-time_step(sim_time, step, 4, [0, 0, 0], 0) #time step 1000 for final sim
-#time_step(sim_time, step, 5, [0, -3, 0], 1.4e7) #0.192e7 extra for 100ms change
-#time_step(sim_time, step, 7, [0, -9, 0], 1.4e7) #0.59e7 extra for 300ms change
-#time_step(sim_time, step, 6, [0, -6, 0], 1.4e7) #0.3885e7 extra for 200ms change
-#time_step(sim_time, step, 8, [0, -12, 0], 1.4e7) #0.795e7 extra for 400ms change
-
-start_time = 0
 start_step = int(start_time / step)
 
 x_earth = [coord[0] for coord in earth_list]
@@ -396,41 +401,41 @@ x_neptune = [coord[0] for coord in neptune_list]
 y_neptune = [coord[1] for coord in neptune_list]
 z_neptune = [coord[2] for coord in neptune_list]
 
-x_asteroid1 = [coord[0] for coord in bodies[4].past_positions]
-y_asteroid1 = [coord[1] for coord in bodies[4].past_positions]
-z_asteroid1 = [coord[2] for coord in bodies[4].past_positions]
+x_asteroid1 = [coord[0] for coord in bodies[9].past_positions]
+y_asteroid1 = [coord[1] for coord in bodies[9].past_positions]
+z_asteroid1 = [coord[2] for coord in bodies[9].past_positions]
 
 x_asteroid1 = x_asteroid1[start_step:]
 y_asteroid1 = y_asteroid1[start_step:]
 z_asteroid1 = z_asteroid1[start_step:]
 
-x_asteroid2 = [coord[0] for coord in bodies[5].past_positions]
-y_asteroid2 = [coord[1] for coord in bodies[5].past_positions]
-z_asteroid2 = [coord[2] for coord in bodies[5].past_positions]
+x_asteroid2 = [coord[0] for coord in bodies[10].past_positions]
+y_asteroid2 = [coord[1] for coord in bodies[10].past_positions]
+z_asteroid2 = [coord[2] for coord in bodies[10].past_positions]
 
 x_asteroid2 = x_asteroid2[start_step:]
 y_asteroid2 = y_asteroid2[start_step:]
 z_asteroid2 = z_asteroid2[start_step:]
 
-x_asteroid3 = [coord[0] for coord in bodies[6].past_positions]
-y_asteroid3 = [coord[1] for coord in bodies[6].past_positions]
-z_asteroid3 = [coord[2] for coord in bodies[6].past_positions]
+x_asteroid3 = [coord[0] for coord in bodies[11].past_positions]
+y_asteroid3 = [coord[1] for coord in bodies[11].past_positions]
+z_asteroid3 = [coord[2] for coord in bodies[11].past_positions]
 
 x_asteroid3 = x_asteroid3[start_step:]
 y_asteroid3 = y_asteroid3[start_step:]
 z_asteroid3 = z_asteroid3[start_step:]
 
-x_asteroid4 = [coord[0] for coord in bodies[7].past_positions]
-y_asteroid4 = [coord[1] for coord in bodies[7].past_positions]
-z_asteroid4 = [coord[2] for coord in bodies[7].past_positions]
+x_asteroid4 = [coord[0] for coord in bodies[12].past_positions]
+y_asteroid4 = [coord[1] for coord in bodies[12].past_positions]
+z_asteroid4 = [coord[2] for coord in bodies[12].past_positions]
 
 x_asteroid4 = x_asteroid4[start_step:]
 y_asteroid4 = y_asteroid4[start_step:]
 z_asteroid4 = z_asteroid4[start_step:]
 
-x_asteroid5 = [coord[0] for coord in bodies[8].past_positions]
-y_asteroid5 = [coord[1] for coord in bodies[8].past_positions]
-z_asteroid5 = [coord[2] for coord in bodies[8].past_positions]
+x_asteroid5 = [coord[0] for coord in bodies[13].past_positions]
+y_asteroid5 = [coord[1] for coord in bodies[13].past_positions]
+z_asteroid5 = [coord[2] for coord in bodies[13].past_positions]
 
 x_asteroid5 = x_asteroid5[start_step:]
 y_asteroid5 = y_asteroid5[start_step:]
@@ -452,21 +457,21 @@ def plot_positions():
 
     circle = plt.Circle((0,0), bodies[0].radius, edgecolor='orange', facecolor='none', linestyle='dashed', linewidth=0.8)
     plt.gca().add_patch(circle)
-    circle = plt.Circle((0,0), bodies[1].radius, edgecolor='black', facecolor='none', linestyle='dashed', linewidth=0.8)
+    circle = plt.Circle((0,0), bodies[1].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
     plt.gca().add_patch(circle)
     circle = plt.Circle((0,0), bodies[2].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
     plt.gca().add_patch(circle)
-    circle = plt.Circle((0,0), bodies[3].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
+    circle = plt.Circle((0,0), bodies[3].radius, edgecolor='black', facecolor='none', linestyle='dashed', linewidth=0.8)
     plt.gca().add_patch(circle)
-    circle = plt.Circle((0,0), bodies[9].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
+    circle = plt.Circle((0,0), bodies[4].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
     plt.gca().add_patch(circle)
-    circle = plt.Circle((0,0), bodies[10].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
+    circle = plt.Circle((0,0), bodies[5].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
     plt.gca().add_patch(circle)
-    circle = plt.Circle((0,0), bodies[11].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
+    circle = plt.Circle((0,0), bodies[6].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
     plt.gca().add_patch(circle)
-    circle = plt.Circle((0,0), bodies[12].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
+    circle = plt.Circle((0,0), bodies[7].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
     plt.gca().add_patch(circle)
-    circle = plt.Circle((0,0), bodies[13].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
+    circle = plt.Circle((0,0), bodies[8].radius, edgecolor='slategray', facecolor='none', linestyle='dashed', linewidth=0.8)
     plt.gca().add_patch(circle)
     circle = plt.Circle((earth_final_pos[0], earth_final_pos[1]), 3.84e8, edgecolor='grey', facecolor='none', linewidth=2)
     plt.gca().add_patch(circle)
@@ -482,11 +487,11 @@ def plot_positions():
     plt.scatter(uranus_final_pos[0], uranus_final_pos[1], marker='o', color='slategray', s=50)
     plt.scatter(neptune_final_pos[0], neptune_final_pos[1], marker='o', color='slategray', s=50)
 
-    plt.scatter(bodies[5].position[0], bodies[5].position[1], marker='o', color='red', s=20)
-    plt.scatter(bodies[6].position[0], bodies[6].position[1], marker='o', color='darkorange', s=20)
-    plt.scatter(bodies[7].position[0], bodies[7].position[1], marker='o', color='greenyellow', s=20)
-    plt.scatter(bodies[8].position[0], bodies[8].position[1], marker='o', color='green', s=20)
-    plt.scatter(bodies[4].position[0], bodies[4].position[1], marker='o', color='maroon', s=2)
+    plt.scatter(bodies[9].position[0], bodies[9].position[1], marker='o', color='maroon', s=2)
+    plt.scatter(bodies[10].position[0], bodies[10].position[1], marker='o', color='red', s=20)
+    plt.scatter(bodies[11].position[0], bodies[11].position[1], marker='o', color='darkorange', s=20)
+    plt.scatter(bodies[12].position[0], bodies[12].position[1], marker='o', color='greenyellow', s=20)
+    plt.scatter(bodies[13].position[0], bodies[13].position[1], marker='o', color='green', s=20)
 
     plt.plot(x_asteroid1, y_asteroid1, linestyle='-', color='maroon', label='Undiverted asteroid', marker='')
     plt.plot(x_asteroid2, y_asteroid2, linestyle='-', color='red', label='8km/s diversion', marker='')
