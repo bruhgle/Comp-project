@@ -14,15 +14,27 @@ from matplotlib.patches import Ellipse
 G = 6.6726e-11
 pi = np.pi
 
-start_date_str = "2024-09-24 00:00:00"
-start_pos = [-1.590269546178139E+011,   3.858859839484540E+10,  -5.805981106895613E+09]
-start_vel = [-4.677768707144813E+03,  -2.537175688165507E+04,   1.242563246429153E+03]
-start_pos_sigma = [3.85854528E+02,          8.20628908E+02,          3.73558771E+02]
-start_vel_sigma = [1.32453254E-04,          4.33736823E-05,          8.80633419E-05]
-sim_time = 1.435968e+7
-step = 100000
+start_date_str = "2028-09-24 00:00:00"
+start_pos = [1.140858785274808E+11,   2.202717727038012E+10,   1.505460279676625E+09]
+start_vel = [-3.072333498677471E+03,   3.622336749588278E+04,  -2.006119059140651E+03]
+start_pos_sigma = [3.81924509E+02,          1.28002435E+03,          3.90649455E+02]
+start_vel_sigma = [3.70165958E-04,          6.37531330E-05,          1.05375217E-04]
+sim_time = 1.7566400e7
+step = 1000
 start_time = 0
-num_asteroids = 3
+num_asteroids = 1
+groups = 1
+plot_size = 0.3e12
+
+impulse_increase = [50,0,0]
+impulse_time = 0.04e7
+impulse_frame = int(impulse_time / step)
+
+impulse = []
+
+for i in range(groups):
+
+    impulse.append([i*impulse_increase[0],i*impulse_increase[1],i*impulse_increase[2]])
 
 start_date_formatted = datetime.strptime(start_date_str, "%Y-%m-%d %H:%M:%S")
 
@@ -50,6 +62,10 @@ bodies = [
     body("Uranus", 8.6813e25, [0, 0, 0], [0, 0, 0], [0, 0, 0], 2.867043e12),   #7
     body("Neptune", 1.0243e26, [0, 0, 0], [0, 0, 0], [0, 0, 0], 4.513953e12),  #8
 ]
+
+def update_progress(current_frame, total_frames):
+    progress = (current_frame + 1) / total_frames * 100
+    print(f"\rProgress: {progress:.2f}%", end="")
 
 def random_value(center, sigma):
     
@@ -189,7 +205,7 @@ def planet_position(index, startdate, t):
     y = solar_radius * math.sin(long)
     z = solar_distance * math.sin(lat)
 
-    return x, y, z
+    return [x, y, z]
 
 def compute_displacement(index, asteroid_index):
 
@@ -235,7 +251,7 @@ def leapfrog_position(position, velocity, acceleration, step):
     new_position_y = position[1] + (step * new_velocity_y)
     new_position_z = position[2] + (step * new_velocity_z)
 
-    return new_position_x, new_position_y, new_position_z
+    return [new_position_x, new_position_y, new_position_z]
 
 def leapfrog_velocity(velocity, acceleration, step):
 
@@ -251,7 +267,7 @@ def compute_moid(index):
 
     return moid
 
-for i in range(1, 1 + num_asteroids):
+for i in range(1, 1 + groups*num_asteroids):
     asteroid_name = f"asteroid{i}"
     randposx = random_value(start_pos[0],start_pos_sigma[0])
     randposy = random_value(start_pos[1],start_pos_sigma[1])
@@ -263,13 +279,13 @@ for i in range(1, 1 + num_asteroids):
     asteroid = body(asteroid_name, randmass, [0,0,0], [randvelx, randvely, randvelz], [randposx, randposy, randposz], 0)
     bodies.append(asteroid)
 
-for i in range(9, 9+num_asteroids):
+for i in range(9, 9+groups*num_asteroids):
     bodies[i].trail = {'x': [], 'y': []}
 
 def calculate_average(entries):
     averages = []
-    for i in range(0, len(entries), num_asteroids):
-        sublist = entries[i:i+num_asteroids]
+    for i in range(0, len(entries), groups*num_asteroids):
+        sublist = entries[i:i+groups*num_asteroids]
         avg = sum(sublist) / len(sublist)
         averages.append(avg)
     return averages
@@ -309,9 +325,7 @@ earth_final_pos = [0,0,0]
 venus_final_pos = [0,0,0]
 mars_final_pos = [0,0,0]
 
-plot_size = 0.3e12
-
-fig, ax = plt.subplots(figsize=(6, 6))
+fig, ax = plt.subplots(figsize=(12, 12))
 ax.set_xlim(-plot_size, plot_size)
 ax.set_ylim(-plot_size, plot_size)
 ax.set_aspect('equal')
@@ -338,14 +352,27 @@ planet_size = 4
 asteroid_size = 3
 planet_plots = []
 
-for _ in range(7):
+for _ in range(0,2):
 
     plot, = ax.plot([], [], linestyle='-', color='blue', label='planet', marker='o', markersize = planet_size)
+
+    planet_plots.append(plot)
+
+for _ in range(2,3):
+
+    plot, = ax.plot([], [], linestyle='-', color='green', label='planet', marker='o', markersize = planet_size)
+
+    planet_plots.append(plot)
+
+for _ in range(3,8):
+
+    plot, = ax.plot([], [], linestyle='-', color='blue', label='planet', marker='o', markersize = planet_size)
+
     planet_plots.append(plot)
 
 asteroid_plots = []
 
-for _ in range(num_asteroids):
+for _ in range(groups*num_asteroids):
     plot, = ax.plot([], [], linestyle='-', color="red", label="asteroid", marker='o', markersize=asteroid_size)
     asteroid_plots.append(plot)
     
@@ -363,7 +390,7 @@ trail_length = 2000  # Adjust the trail length as needed
 
 trails = []
 
-for _ in range(num_asteroids):
+for _ in range(groups*num_asteroids):
 
     plot, = ax.plot([], [], linewidth=1, linestyle='-', color='red')
     trails.append(plot)
@@ -388,17 +415,16 @@ label_font = {'family': 'DejaVu Serif', 'weight': 'normal', 'size': 13}
 ax.set_xlabel(fontdict=label_font, xlabel = "x position (AU)")
 ax.set_ylabel(fontdict=label_font, ylabel = "y position (AU)")
 
-def update(frame):
+print("Animation started...")
 
+def update(frame):
     global start_pos, start_vel, start_pos_sigma, start_vel_sigma
 
-    for i in range(1,9):
-
+    for i in range(1, 9):
         bodies[i].position = planet_position(i, start_date_formatted, frame * step)
 
-    for i in range(9,9+num_asteroids):
-
-        sun_acc = compute_acceleration(0, i) 
+    for i in range(9, 9 + groups*num_asteroids):
+        sun_acc = compute_acceleration(0, i)
         mer_acc = compute_acceleration(1, i)
         ven_acc = compute_acceleration(2, i)
         ear_acc = compute_acceleration(3, i)
@@ -408,78 +434,66 @@ def update(frame):
         ura_acc = compute_acceleration(7, i)
         nep_acc = compute_acceleration(8, i)
 
-        acc = [0,0,0]
+        acc = [0, 0, 0]
 
-        acc[0] = sun_acc[0]+mer_acc[0]+ven_acc[0]+ear_acc[0]+mar_acc[0]+jup_acc[0]+sat_acc[0]+ura_acc[0]+nep_acc[0]
-        acc[1] = sun_acc[1]+mer_acc[1]+ven_acc[1]+ear_acc[1]+mar_acc[1]+jup_acc[1]+sat_acc[1]+ura_acc[1]+nep_acc[1]
-        acc[2] = sun_acc[2]+mer_acc[2]+ven_acc[2]+ear_acc[2]+mar_acc[2]+jup_acc[2]+sat_acc[0]+ura_acc[2]+nep_acc[2]
+        acc[0] = sun_acc[0] + mer_acc[0] + ven_acc[0] + ear_acc[0] + mar_acc[0] + jup_acc[0] + sat_acc[0] + ura_acc[0] + nep_acc[0]
+        acc[1] = sun_acc[1] + mer_acc[1] + ven_acc[1] + ear_acc[1] + mar_acc[1] + jup_acc[1] + sat_acc[1] + ura_acc[1] + nep_acc[1]
+        acc[2] = sun_acc[2] + mer_acc[2] + ven_acc[2] + ear_acc[2] + mar_acc[2] + jup_acc[2] + sat_acc[0] + ura_acc[2] + nep_acc[2]
 
         bodies[i].acceleration = acc
 
-    for i in range(9,9+num_asteroids):
-
+    for i in range(9, 9 + groups*num_asteroids):
         bodies[i].velocity = leapfrog_velocity(bodies[i].velocity, bodies[i].acceleration, step)
 
-    if frame == impulse_frame:
-        # Apply the velocity change to asteroid 1
-        bodies[i].velocity = [bodies[i].velocity[0] + impulse1[0], bodies[i].velocity[1] + impulse1[1], bodies[i].velocity[2] + impulse1[2]]
-    
-    for i in range(9,9+num_asteroids):
+        if frame == impulse_frame:
+
+            for k in range(1, groups):
+
+                if i >= (9+k*num_asteroids) and i < (9+(k+1)*num_asteroids):
+
+                    bodies[i].velocity = [bodies[i].velocity[0] + impulse[k][0], bodies[i].velocity[1] + impulse[k][1], bodies[i].velocity[2] + impulse[k][2]]
 
         bodies[i].position = leapfrog_position(bodies[i].position, bodies[i].velocity, bodies[i].acceleration, step)
 
-    positions = []
+    for i in range(9, 9 + groups*num_asteroids):
+        bodies[i].trail['x'].append(bodies[i].position[0])
+        bodies[i].trail['y'].append(bodies[i].position[1])
 
-    for i in range(num_asteroids):
+    for i in range(1, 9):
+        x_data = bodies[i].position[0]
+        y_data = bodies[i].position[1]
+        planet_plots[i-1].set_data(x_data, y_data)
 
-        positions.append(bodies[i].position)
+    for i in range(9, 9 + groups*num_asteroids):
+        x_data = bodies[i].position[0]
+        y_data = bodies[i].position[1]
+        asteroid_plots[i-9].set_data(x_data, y_data)
 
-    for i, pos in enumerate(positions):
-        bodies[i + 9].trail['x'].append(pos[0])
-        bodies[i + 9].trail['y'].append(pos[1])
-
-    #trails = []
-    
-    #for i in range(9, 9+num_asteroids):
-        #trail = bodies[i].trail
-        #x_data = trail['x'][-trail_length:]
-        #asteroid_trail = trails[i-9].set_data(x_data, y_data)
-        #y_data = trail['y'][-trail_length:]
-        #trails.append(asteroid_trail)
-
-    planet_plotsi = []
-
-    for i in range(1, 9):  # Assuming Mercury is bodies[1] and Earth is bodies[2]
-        planet_plot = bodies[i].position
-        x_data = planet_plot[0]
-        y_data = planet_plot[1]
-        plot, = ax.plot(x_data, y_data, linestyle='-', color='blue', label='planet', marker = 'o', markersize=planet_size)  # corrected line
-        planet_plotsi.append(plot)
-
-    ast_plots = []
-
-    for i in range(9, 9+num_asteroids):  # Assuming Mercury is bodies[1] and Earth is bodies[2]
-        ast_plot = bodies[i].position
-        x_data = ast_plot[0]
-        y_data = ast_plot[1]
-        plot, = ax.plot(x_data, y_data, linestyle='-', color='red', label='planet', marker = 'o', markersize=asteroid_size)  # corrected line
-        ast_plots.append(plot)
+    for i in range(9, 9 + groups*num_asteroids):
+        x_data = bodies[i].trail['x'][-trail_length:]
+        y_data = bodies[i].trail['y'][-trail_length:]
+        trails[i-9].set_data(x_data, y_data)
 
     sun_circle.set_center((0, 0))
 
-    current_date = start_date + timedelta(seconds=frame * step)
+    current_date = start_date_formatted + timedelta(seconds=frame * step)
     date_text.set_text(f"Date: {current_date.strftime('%Y-%m-%d %H:%M:%S')}")
 
-    return planet_plotsi, ast_plots, date_text
+    total_frames = int(sim_time/step)
+
+    for k in range(1, 10000):
+
+            if frame == int(k * total_frames/10000):
+
+                print(k/100, "% complete")
+
+    return planet_plots + asteroid_plots + [date_text]
 
 num_frames = int(sim_time / step)
 
-impulse1 = [0, 0, 0]
-
-impulse_time = 1.4e7
-impulse_frame = int(impulse_time / step)
-
 start_date = datetime(2023, 11, 15, 0, 0, 0)
+
+print(num_frames)
 
 # Add date counter text in the top-left corner
 date_text = ax.text(0.02, 0.95, '', transform=ax.transAxes, fontsize=10, color='black', ha='left')
@@ -488,5 +502,9 @@ date_text.set_text(f"Date: {start_date.strftime('%Y-%m-%d %H:%M:%S')}")
 # Create the animation
 animation = FuncAnimation(fig, update, frames=num_frames, interval=1, blit=False)
 
-# Display the animation (optional)
-plt.show()
+#plt.show()
+
+animation_filename = "animation2.mp4"
+animation.save(animation_filename, writer='ffmpeg', fps=30)
+
+print("\nAnimation saved successfully!")
