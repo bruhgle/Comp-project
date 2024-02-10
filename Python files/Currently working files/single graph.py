@@ -13,15 +13,15 @@ from matplotlib.patches import Ellipse
 G = 6.6726e-11
 pi = np.pi
 
-start_date_str = "2024-09-24 00:00:00"
-start_pos = [-1.590269546178139E+011,   3.858859839484540E+10,  -5.805981106895613E+09]
-start_vel = [-4.677768707144813E+03,  -2.537175688165507E+04,   1.242563246429153E+03]
-start_pos_sigma = [3.85854528E+02,          8.20628908E+02,          3.73558771E+02]
-start_vel_sigma = [1.32453254E-04,          4.33736823E-05,          8.80633419E-05]
-sim_time = 1.435968e+7
-step = 10000
+start_date_str = "2028-09-24 00:00:00"
+start_pos = [1.140858785274808E+11,   2.202717727038012E+10,   1.505460279676625E+09]
+start_vel = [-3.072333498677471E+03,   3.622336749588278E+04,  -2.006119059140651E+03]
+start_pos_sigma = [3.81924509E+02,          1.28002435E+03,          3.90649455E+02]
+start_vel_sigma = [3.70165958E-04,          6.37531330E-05,          1.05375217E-04]
+sim_time = 17566400
+step = 1000
 start_time = 0
-num_asteroids = 3
+num_asteroids = 1
 
 class body:
     def __init__(self, name, mass, position, asteroid_acceleration, radius):
@@ -240,11 +240,11 @@ def compute_moid(index):
 
     return moid
 
-for i in range(1, 1 + 5*num_asteroids):
+for i in range(1, 1 + num_asteroids):
     asteroid_name = f"asteroid{i}"
     randposx = random_value(start_pos[0],start_pos_sigma[0])
     randposy = random_value(start_pos[1],start_pos_sigma[1])
-    randposz = random_value(start_pos[1],start_pos_sigma[1])
+    randposz = random_value(start_pos[2],start_pos_sigma[2])
     randmass = 4.0e+10
     asteroid = body(asteroid_name, randmass, [randposx, randposy, randposz], [0,0,0], 0)
     bodies.append(asteroid)
@@ -344,7 +344,7 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
 
             if i == int(k * num_steps/100):
 
-                print("Asteroid",asteroid_index-8, k, "%")
+                print("Asteroid",asteroid_index-8, k, "%, asteroid position =", bodies[9].position)
 
         earth_displacement = compute_displacement(1, asteroid_index)
 
@@ -381,22 +381,6 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
 for i in range(num_asteroids):
 
     time_step(sim_time, step, 9 + i, [0, 0, 0], 0)
-
-for i in range(num_asteroids):
-
-    time_step(sim_time, step, 9 + num_asteroids + i, [500, 0, 0], 0)
-
-for i in range(num_asteroids):
-
-    time_step(sim_time, step, 9 + (2*num_asteroids) + i, [1000, 0, 0], 0)
-
-for i in range(num_asteroids):
-
-    time_step(sim_time, step, 9 + (3*num_asteroids) + i, [1500, 0, 0], 0)
-
-for i in range(num_asteroids):
-
-    time_step(sim_time, step, 9 + (4*num_asteroids) + i, [2000, 0, 0], 0)
 
 start_step = int(start_time / step)
 
@@ -436,7 +420,7 @@ x_asteroids = []
 y_asteroids = []
 z_asteroids = []
 
-for i in range(9, 9 + 5*num_asteroids):
+for i in range(9, 9 + num_asteroids):
     x_asteroid = [coord[0] for coord in bodies[i].past_positions]
     y_asteroid = [coord[1] for coord in bodies[i].past_positions]
     z_asteroid = [coord[2] for coord in bodies[i].past_positions]
@@ -451,7 +435,7 @@ for i in range(9, 9 + 5*num_asteroids):
 
 clearance_diffs = []
 
-for i in range(9, 9 + (5*num_asteroids)):
+for i in range(9, 9 + (num_asteroids)):
 
     clearance_diffs.append(bodies[i].clearance)
 
@@ -460,6 +444,9 @@ days = [t / 86400 for t in time_list]
 def plot_positions():
 
     plt.figure(figsize=(9,9))
+
+    plt.xlim(-3e11,3e11)
+    plt.ylim(-3e11,3e11)
 
     plt.scatter(0, 0, color='yellow', marker='o', s=50, edgecolor='black', zorder=2)
 
@@ -484,11 +471,11 @@ def plot_positions():
 
     colors = ['red', 'green', 'blue', 'orange', 'purple', 'pink', 'cyan', 'brown', 'gray', 'black']
 
-    for i in range(9,(5*num_asteroids)+9):
+    for i in range(9,(num_asteroids)+9):
         
         plt.scatter(bodies[i].position[0], bodies[i].position[1], marker='o', color=colors[i % len(colors)], s=20)
 
-    for i in range(5*num_asteroids):
+    for i in range(num_asteroids):
 
         plt.plot(x_asteroids[i], y_asteroids[i], linestyle='-', color=colors[i % len(colors)], marker='')
 
@@ -510,7 +497,6 @@ def plot_positions():
     #]
 
     #plt.legend(handles=legend_elements, prop = legend_font, loc = 'upper left')
-    plt.axis('equal')
     plt.show()
 
 def plot_clearance():
@@ -545,13 +531,15 @@ print(datetime_date)
 
 moids = []
 
-for i in range(9,9+5*num_asteroids):
+for i in range(9,9+num_asteroids):
 
     moids.append(compute_moid(i))
 
 average_moids = calculate_average(moids)
 
 print(average_moids)
+
+print("Asteroid final position:", bodies[9].position)
 
 plot_positions()
 
