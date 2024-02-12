@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import ephem
 from matplotlib.patches import Ellipse
 from astroquery.jplhorizons import Horizons
+from scipy.interpolate import interp1d
 
 #define global variables
 
@@ -21,7 +22,7 @@ start_pos_sigma_km = [8.08419252E-01,          1.96500509E-01,          3.729569
 start_vel_sigma_kms = [5.25533582E-08,          1.88006672E-07,         1.09625070E-07]
 sim_time = 1.627312e8
 step = 10000
-start_time = 0
+start_time = 1.5e8
 num_asteroids = 1
 groups = 1
 t_impulse = 0
@@ -62,6 +63,22 @@ bodies = [
     body("Uranus", 8.6813e25, [0, 0, 0], [0, 0, 0], 2.867043e12),   #7
     body("Neptune", 1.0243e26, [0, 0, 0], [0, 0, 0], 4.513953e12),  #8
 ]
+
+def calculate_vector_separation(vector1, vector2):
+
+    # Unpack the components of the vectors
+    x1, y1, z1 = vector1
+    x2, y2, z2 = vector2
+    
+    # Calculate the differences in each component
+    dx = x2 - x1
+    dy = y2 - y1
+    dz = z2 - z1
+    
+    # Calculate the Euclidean distance
+    distance = np.sqrt(dx**2 + dy**2 + dz**2)
+    
+    return distance
 
 def true_position(begin_date, t):
     # Convert input date string to datetime object
@@ -484,13 +501,49 @@ for i in range(9, 9 + groups*num_asteroids):
     y_asteroids.append(y_asteroid)
     z_asteroids.append(z_asteroid)
 
+shortened_x_asteroids = []
+shortened_y_asteroids = []
+shortened_z_asteroids = []
+
+# Loop through each asteroid's past positions
+for asteroid_index in range(9, 9 + groups * num_asteroids):
+    # Get the past positions of the asteroid
+    asteroid_positions = bodies[asteroid_index].past_positions
+    
+    # Calculate the step size to select every 100th coordinate
+    step_bigness = len(asteroid_positions) // 100
+    
+    # Initialize lists to store shortened coordinates for the current asteroid
+    shortened_x_asteroid = []
+    shortened_y_asteroid = []
+    shortened_z_asteroid = []
+    
+    # Loop through the asteroid's past positions and select every 100th coordinate
+    for i in range(0, len(asteroid_positions), step_bigness):
+        shortened_x_asteroid.append(asteroid_positions[i][0])
+        shortened_y_asteroid.append(asteroid_positions[i][1])
+        shortened_z_asteroid.append(asteroid_positions[i][2])
+    
+    # Append the shortened coordinates to the respective lists
+    shortened_x_asteroids.append(shortened_x_asteroid)
+    shortened_y_asteroids.append(shortened_y_asteroid)
+    shortened_z_asteroids.append(shortened_z_asteroid)
+
+print(len(shortened_x_asteroids[0]))
+print(len(shortened_y_asteroids[0]))
+print(len(shortened_z_asteroids[0]))
+
 clearance_diffs = []
 
 for i in range(9, 9 + (groups*num_asteroids)):
 
     clearance_diffs.append(bodies[i].clearance)
 
+steps = len(x_asteroids[0])
+
 days = [t / 86400 for t in time_list]
+
+deviation_list = []
 
 def plot_positions():
 
@@ -531,7 +584,12 @@ def plot_positions():
 
     for i in range(len(real_positions)):
 
-        plt.scatter(real_positions[i][0], real_positions[i][1], marker='o', color='pink', s=20)
+        deviation_list.append(calculate_vector_separation([real_positions[i][0], real_positions[i][1], real_positions[i][2]], [shortened_x_asteroids[0][i], shortened_y_asteroids[0][i], shortened_z_asteroids[0][i]]))
+
+        if time_list[int((i/100)*sim_time/step)] >= start_time:
+
+            plt.scatter(real_positions[i][0], real_positions[i][1], marker='o', color='red', s=20)
+            plt.plot([real_positions[i][0], shortened_x_asteroids[0][i]], [real_positions[i][1], shortened_y_asteroids[0][i]], linestyle='-', marker='x', color='r')
     
     for i in range(groups*num_asteroids):
 
@@ -563,7 +621,7 @@ def plot_clearance():
 
     for i in range(9, 9 + groups*num_asteroids):
         
-        ax1.plot(days, bodies[i].clearance, linestyle='-', color='green', marker='')
+        ax1.plot(days, deviation_list, linestyle='-', color='green', marker='')
 
     legend_font = {'family': 'DejaVu Serif', 'weight': 'normal', 'size': 9}
 
@@ -573,7 +631,7 @@ def plot_clearance():
 
     for i in range(groups*num_asteroids):
 
-        ax2.plot(days, clearance_diffs[i], linestyle='-', color='green', label='32km/s diversion', marker='')
+        ax2.plot(days, deviation_list, linestyle='-', color='green', label='32km/s diversion', marker='')
     
     legend_font = {'family': 'DejaVu Serif', 'weight': 'normal', 'size': 9}
 
@@ -600,5 +658,15 @@ print(average_moids)
 print("Asteroid final position:", bodies[9].position)
 
 plot_positions()
+
+print('deviation list:',deviation_list)
+
+print(len(deviation_list))
+
+days = []
+
+for i in range(100):
+
+    days.append(i+1)
 
 plot_clearance()
