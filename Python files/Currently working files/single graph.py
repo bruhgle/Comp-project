@@ -7,21 +7,38 @@ from matplotlib.lines import Line2D
 from datetime import datetime, timedelta
 import ephem
 from matplotlib.patches import Ellipse
+from astroquery.jplhorizons import Horizons
 
 #define global variables
 
 G = 6.6726e-11
 pi = np.pi
 
-start_date_str = "2028-09-24 00:00:00"
-start_pos = [1.140858785274808E+11,   2.202717727038012E+10,   1.505460279676625E+09]
-start_vel = [-3.072333498677471E+03,   3.622336749588278E+04,  -2.006119059140651E+03]
-start_pos_sigma = [3.81924509E+02,          1.28002435E+03,          3.90649455E+02]
-start_vel_sigma = [3.70165958E-04,          6.37531330E-05,          1.05375217E-04]
-sim_time = 17566400
-step = 1000
+start_date_str = "2024-02-16 00:00:00"
+start_pos_km = [-3.568239428001128E+06,  -1.221942256530830E+08,   6.463846170185752E+06]
+start_vel_kms = [3.455856810762581E+01,   4.664927896208987E+00 ,  5.690212449251899E-01]
+start_pos_sigma_km = [8.08419252E-01,          1.96500509E-01,          3.72956965E-01]
+start_vel_sigma_kms = [5.25533582E-08,          1.88006672E-07,         1.09625070E-07]
+sim_time = 1.627312e8
+step = 10000
 start_time = 0
 num_asteroids = 1
+groups = 1
+t_impulse = 0
+num_real_coords = 100
+
+impulse_increase = [3,0,0]
+
+impulse = []
+
+for i in range(groups):
+
+    impulse.append([i*impulse_increase[0],i*impulse_increase[1],i*impulse_increase[2]])
+
+start_pos = [start_pos_km[0]*1000,  start_pos_km[1]*1000,   start_pos_km[2]*1000]
+start_vel = [start_vel_kms[0]*1000,  start_vel_kms[1]*1000,   start_vel_kms[2]*1000]
+start_pos_sigma = [start_pos_sigma_km[0]*1000,          start_pos_sigma_km[1]*1000,          start_pos_sigma_km[2]*1000]
+start_vel_sigma = [start_vel_sigma_kms[0]*1000,          start_vel_sigma_kms[1]*1000,          start_vel_sigma_kms[2]*1000]
 
 class body:
     def __init__(self, name, mass, position, asteroid_acceleration, radius):
@@ -45,6 +62,31 @@ bodies = [
     body("Uranus", 8.6813e25, [0, 0, 0], [0, 0, 0], 2.867043e12),   #7
     body("Neptune", 1.0243e26, [0, 0, 0], [0, 0, 0], 4.513953e12),  #8
 ]
+
+def true_position(begin_date, t):
+    # Convert input date string to datetime object
+    start_date = datetime.strptime(begin_date.split()[0], '%Y-%m-%d').date() + timedelta(seconds = t)
+
+    # Calculate end date as start date plus one day
+    end_date = start_date + timedelta(days=1)
+
+    # Convert end date back to string in the required format
+    start_date_str = start_date.strftime('%Y-%m-%d')
+    end_date_str = end_date.strftime('%Y-%m-%d')
+
+    # Create a Horizons query object for Apophis to get vector table
+    obj = Horizons(id='99942', location='500@0', epochs={'start': start_date_str, 'stop': end_date_str, 'step': '1d'})
+
+    # Perform the query to get the vector table
+    vec = obj.vectors()
+
+    # Extracting heliocentric Cartesian coordinates (X, Y, Z) from the vector table
+    x_helio = vec['x'][0] * 149597870700
+    y_helio = vec['y'][0] * 149597870700
+    z_helio = vec['z'][0] * 149597870700
+
+    # Return the heliocentric coordinates
+    return [x_helio, y_helio, z_helio]
 
 def random_value(center, sigma):
     
@@ -240,7 +282,7 @@ def compute_moid(index):
 
     return moid
 
-for i in range(1, 1 + num_asteroids):
+for i in range(1, 1 + groups*num_asteroids):
     asteroid_name = f"asteroid{i}"
     randposx = random_value(start_pos[0],start_pos_sigma[0])
     randposy = random_value(start_pos[1],start_pos_sigma[1])
@@ -274,9 +316,12 @@ impulse_coords = []
 
 acceleration_list = []
 
-earth_final_pos = [0,0,0]
-venus_final_pos = [0,0,0]
-mars_final_pos = [0,0,0]
+real_positions = []
+
+for i in range(num_real_coords):
+
+    real_pos = true_position(start_date_str, i * int(sim_time/num_real_coords))
+    real_positions.append(real_pos)
 
 def time_step(time, step_size, asteroid_index, impulse, impulse_time):
 
@@ -332,9 +377,11 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
 
         if i == int(impulse_time / step_size):
 
-            velocity = [velocity[0] + impulse[0],
-                        velocity[1] + impulse[1],
-                        velocity[2] + impulse[2]]
+            for k in range(1, groups):
+
+                if i >= (9+k*num_asteroids) and i < (9+(k+1)*num_asteroids):
+
+                    bodies[i].velocity = [bodies[i].velocity[0] + impulse[k][0], bodies[i].velocity[1] + impulse[k][1], bodies[i].velocity[2] + impulse[k][2]]
 
             impulse_coords.append(bodies[asteroid_index].position)
 
@@ -378,9 +425,11 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
     bodies[asteroid_index].clearance = clearance_list
     bodies[asteroid_index].separation = separation_list
 
-for i in range(num_asteroids):
+for i in range(9, 9+groups*num_asteroids):
 
-    time_step(sim_time, step, 9 + i, [0, 0, 0], 0)
+    for k in range(1, groups+1):
+
+        time_step(sim_time, step, groups*i, [0, 0, 0], t_impulse)
 
 start_step = int(start_time / step)
 
@@ -416,11 +465,13 @@ x_neptune = [coord[0] for coord in neptune_list]
 y_neptune = [coord[1] for coord in neptune_list]
 z_neptune = [coord[2] for coord in neptune_list]
 
+apophis_real_position = [-1.383307733630716E+11,  -5.888497786735724E+10,  -1.206165553958640E+08]
+
 x_asteroids = []
 y_asteroids = []
 z_asteroids = []
 
-for i in range(9, 9 + num_asteroids):
+for i in range(9, 9 + groups*num_asteroids):
     x_asteroid = [coord[0] for coord in bodies[i].past_positions]
     y_asteroid = [coord[1] for coord in bodies[i].past_positions]
     z_asteroid = [coord[2] for coord in bodies[i].past_positions]
@@ -435,7 +486,7 @@ for i in range(9, 9 + num_asteroids):
 
 clearance_diffs = []
 
-for i in range(9, 9 + (num_asteroids)):
+for i in range(9, 9 + (groups*num_asteroids)):
 
     clearance_diffs.append(bodies[i].clearance)
 
@@ -468,16 +519,23 @@ def plot_positions():
     plt.scatter(saturn_final_pos[0], saturn_final_pos[1], marker='o', color='black', s=50)
     plt.scatter(uranus_final_pos[0], uranus_final_pos[1], marker='o', color='black', s=50)
     plt.scatter(neptune_final_pos[0], neptune_final_pos[1], marker='o', color='black', s=50)
+    plt.scatter(apophis_real_position[0], apophis_real_position[1], marker='x', color='red', s=30)
+
+    plt.plot([apophis_real_position[0], bodies[9].position[0]], [apophis_real_position[1], bodies[9].position[1]], linestyle='-', marker='x', color='r')
 
     colors = ['red', 'green', 'blue', 'orange', 'purple', 'pink', 'cyan', 'brown', 'gray', 'black']
 
-    for i in range(9,(num_asteroids)+9):
+    for i in range(9,(groups*num_asteroids)+9):
         
         plt.scatter(bodies[i].position[0], bodies[i].position[1], marker='o', color=colors[i % len(colors)], s=20)
 
-    for i in range(num_asteroids):
+    for i in range(len(real_positions)):
 
-        plt.plot(x_asteroids[i], y_asteroids[i], linestyle='-', color=colors[i % len(colors)], marker='')
+        plt.scatter(real_positions[i][0], real_positions[i][1], marker='o', color='pink', s=20)
+    
+    for i in range(groups*num_asteroids):
+
+        plt.plot(x_asteroids[i], y_asteroids[i], linestyle='-', color=colors[(9+i) % len(colors)])
 
     plt.title("", fontdict={'family': 'DejaVu Serif', 'color':  'black', 'weight': 'normal', 'size': 11})
     plt.xlabel("x position (10  m)", fontdict={'family': 'DejaVu Serif', 'color':  'black', 'weight': 'normal', 'size': 11})
@@ -503,7 +561,7 @@ def plot_clearance():
 
     fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
 
-    for i in range(9, 9 + num_asteroids):
+    for i in range(9, 9 + groups*num_asteroids):
         
         ax1.plot(days, bodies[i].clearance, linestyle='-', color='green', marker='')
 
@@ -513,7 +571,7 @@ def plot_clearance():
     ax1.set_ylabel("Earth clearance (10  m)", fontdict={'family': 'DejaVu Serif', 'color': 'black', 'weight': 'normal', 'size': 11})
     ax1.legend(prop = legend_font, loc = 'lower left')
 
-    for i in range(num_asteroids):
+    for i in range(groups*num_asteroids):
 
         ax2.plot(days, clearance_diffs[i], linestyle='-', color='green', label='32km/s diversion', marker='')
     
@@ -531,7 +589,7 @@ print(datetime_date)
 
 moids = []
 
-for i in range(9,9+num_asteroids):
+for i in range(9,9+groups*num_asteroids):
 
     moids.append(compute_moid(i))
 

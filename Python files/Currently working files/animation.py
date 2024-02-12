@@ -14,23 +14,32 @@ from matplotlib.patches import Ellipse
 G = 6.6726e-11
 pi = np.pi
 
-start_date_str = "2028-09-24 00:00:00"
-start_pos = [1.140858785274808E+11,   2.202717727038012E+10,   1.505460279676625E+09]
-start_vel = [-3.072333498677471E+03,   3.622336749588278E+04,  -2.006119059140651E+03]
-start_pos_sigma = [3.81924509E+02,          1.28002435E+03,          3.90649455E+02]
-start_vel_sigma = [3.70165958E-04,          6.37531330E-05,          1.05375217E-04]
-sim_time = 1.7566400e7
-step = 1000
+start_date_str = "2024-02-16 00:00:00"
+start_pos_km = [-3.310754998288520E+07,  -1.230001332266182E+08,   5.807800651263952E+06]
+start_vel_kms = [3.354506959953451E+01,  -2.664591461338808E+00,   9.358980989120539E-01]
+start_pos_sigma_km = [7.57128036E-01,          1.50655385E-01,          4.47264648E-01]
+start_vel_sigma_kms = [8.56818574E-08,          1.58499594E-07,          8.97921848E-08]
+sim_time = 1.62691200e8
+step = 500
 start_time = 0
 num_asteroids = 1
-groups = 1
+groups = 5
 plot_size = 0.3e12
 
-impulse_increase = [50,0,0]
-impulse_time = 0.04e7
+impulse_increase = [-5,0,0]
+impulse_time = 500
 impulse_frame = int(impulse_time / step)
 
+# Set up the legend
+legend_font = {'family': 'DejaVu Serif', 'weight': 'normal', 'size': 13}
+label_font = {'family': 'DejaVu Serif', 'weight': 'normal', 'size': 13}
+
 impulse = []
+
+start_pos = [start_pos_km[0]*1000,  start_pos_km[1]*1000,   start_pos_km[2]*1000]
+start_vel = [start_vel_kms[0]*1000,  start_vel_kms[1]/1000,   start_vel_kms[2]*1000]
+start_pos_sigma = [start_pos_sigma_km[0]*1000,          start_pos_sigma_km[1]*1000,          start_pos_sigma_km[2]*1000]
+start_vel_sigma = [start_vel_sigma_kms[0]*1000,          start_vel_sigma_kms[1]*1000,          start_vel_sigma_kms[2]*1000]
 
 for i in range(groups):
 
@@ -325,7 +334,7 @@ earth_final_pos = [0,0,0]
 venus_final_pos = [0,0,0]
 mars_final_pos = [0,0,0]
 
-fig, ax = plt.subplots(figsize=(12, 12))
+fig, ax = plt.subplots(figsize=(11, 11))
 ax.set_xlim(-plot_size, plot_size)
 ax.set_ylim(-plot_size, plot_size)
 ax.set_aspect('equal')
@@ -348,8 +357,8 @@ ax.set_yticks(sim_yticks)
 ax.set_xticklabels([f"{tick:.1f}" for tick in au_xticks])
 ax.set_yticklabels([f"{tick:.1f}" for tick in au_yticks])
 
-planet_size = 4
-asteroid_size = 3
+planet_size = 6
+asteroid_size = 4
 planet_plots = []
 
 for _ in range(0,2):
@@ -398,19 +407,14 @@ for _ in range(groups*num_asteroids):
 sun_circle = plt.Circle((0, 0), 1e10, facecolor='yellow', edgecolor = 'black', label='Sun')
 ax.add_patch(sun_circle)
 
-# Set up the legend
-legend_font = {'family': 'DejaVu Serif', 'weight': 'normal', 'size': 9}
-label_font = {'family': 'DejaVu Serif', 'weight': 'normal', 'size': 13}
 
-#legend_elements = [
-        #Line2D([0], [0], linewidth=2, linestyle='-', color='maroon', markersize=10, label='Undiverted asteroid'),
-        #Line2D([0], [0], linewidth=2, linestyle='-', color='red', markersize=10, label='8km/s diversion'),
-        #Line2D([0], [0], linewidth=2, linestyle='-', color='darkorange', markersize=10, label='16km/s diversion'),
-        #Line2D([0], [0], linewidth=2, linestyle='-', color='greenyellow', markersize=10, label='24km/s diversion'),
-        #Line2D([0], [0], linewidth=2, linestyle='-', color='green', markersize=10, label='32km/s diversion'),
-    #]
+legend_elements = [
+    plt.scatter([], [], color='green', marker='o', s=100, label='Earth'),
+    plt.scatter([], [], color='blue', marker='o', s=100, label='Other planets'),
+    plt.scatter([], [], color='red', marker='o', s=100, label='Asteroids'),
+]
 
-#ax.legend(handles = legend_elements, prop=legend_font, loc='upper left', bbox_to_anchor=(1,1))
+ax.legend(handles = legend_elements, prop=legend_font, loc='upper right', bbox_to_anchor=(1,1))
 
 ax.set_xlabel(fontdict=label_font, xlabel = "x position (AU)")
 ax.set_ylabel(fontdict=label_font, ylabel = "y position (AU)")
@@ -496,7 +500,7 @@ start_date = datetime(2023, 11, 15, 0, 0, 0)
 print(num_frames)
 
 # Add date counter text in the top-left corner
-date_text = ax.text(0.02, 0.95, '', transform=ax.transAxes, fontsize=10, color='black', ha='left')
+date_text = ax.text(0.02, 0.95, '', transform=ax.transAxes, fontdict=label_font, color='black', ha='left')
 date_text.set_text(f"Date: {start_date.strftime('%Y-%m-%d %H:%M:%S')}")
 
 # Create the animation
@@ -504,7 +508,7 @@ animation = FuncAnimation(fig, update, frames=num_frames, interval=1, blit=False
 
 #plt.show()
 
-animation_filename = "animation2.mp4"
-animation.save(animation_filename, writer='ffmpeg', fps=30)
+animation_filename = "animation3.mp4"
+animation.save(animation_filename, writer='ffmpeg', fps=60)
 
 print("\nAnimation saved successfully!")
