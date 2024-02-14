@@ -19,12 +19,13 @@ start_pos_km = [-3.310754998288520E+07,  -1.230001332266182E+08,   5.80780065126
 start_vel_kms = [3.354506959953451E+01,  -2.664591461338808E+00,   9.358980989120539E-01]
 start_pos_sigma_km = [7.57128036E-01,          1.50655385E-01,          4.47264648E-01]
 start_vel_sigma_kms = [8.56818574E-08,          1.58499594E-07,          8.97921848E-08]
-sim_time = 1.62691200e8
-step = 500
+sim_time = 1.72691200e8
+step = 10000
 start_time = 0
 num_asteroids = 1
 groups = 5
 plot_size = 0.3e12
+trail_length = 2000
 
 impulse_increase = [-5,0,0]
 impulse_time = 500
@@ -71,6 +72,22 @@ bodies = [
     body("Uranus", 8.6813e25, [0, 0, 0], [0, 0, 0], [0, 0, 0], 2.867043e12),   #7
     body("Neptune", 1.0243e26, [0, 0, 0], [0, 0, 0], [0, 0, 0], 4.513953e12),  #8
 ]
+
+def calculate_vector_separation(vector1, vector2):
+
+    # Unpack the components of the vectors
+    x1, y1, z1 = vector1
+    x2, y2, z2 = vector2
+    
+    # Calculate the differences in each component
+    dx = x2 - x1
+    dy = y2 - y1
+    dz = z2 - z1
+    
+    # Calculate the Euclidean distance
+    distance = np.sqrt(dx**2 + dy**2 + dz**2)
+    
+    return distance
 
 def update_progress(current_frame, total_frames):
     progress = (current_frame + 1) / total_frames * 100
@@ -395,8 +412,6 @@ for i in range(1,9):
     orbit_circles.append(circle)
     ax.add_patch(circle)
 
-trail_length = 2000  # Adjust the trail length as needed
-
 trails = []
 
 for _ in range(groups*num_asteroids):
@@ -459,6 +474,8 @@ def update(frame):
 
         bodies[i].position = leapfrog_position(bodies[i].position, bodies[i].velocity, bodies[i].acceleration, step)
 
+        bodies[i].clearance.append(calculate_vector_separation(bodies[i].position, bodies[3].position))
+
     for i in range(9, 9 + groups*num_asteroids):
         bodies[i].trail['x'].append(bodies[i].position[0])
         bodies[i].trail['y'].append(bodies[i].position[1])
@@ -512,3 +529,7 @@ animation_filename = "animation3.mp4"
 animation.save(animation_filename, writer='ffmpeg', fps=60)
 
 print("\nAnimation saved successfully!")
+
+for i in range(9,9+groups*num_asteroids):
+
+    print(f"Asteroid {i-8} MOID:", compute_moid(i))
