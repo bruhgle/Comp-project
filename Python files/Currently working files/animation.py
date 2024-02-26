@@ -20,14 +20,14 @@ start_vel_kms = [3.354506959953451E+01,  -2.664591461338808E+00,   9.35898098912
 start_pos_sigma_km = [7.57128036E-01,          1.50655385E-01,          4.47264648E-01]
 start_vel_sigma_kms = [8.56818574E-08,          1.58499594E-07,          8.97921848E-08]
 sim_time = 1.72691200e8
-step = 10000
+step = 5000
 start_time = 0
 num_asteroids = 1
 groups = 5
 plot_size = 0.3e12
-trail_length = 2000
+trail_length = 4000
 
-impulse_increase = [-5,0,0]
+impulse_increase = [+10,0,0]
 impulse_time = 500
 impulse_frame = int(impulse_time / step)
 
@@ -351,7 +351,7 @@ earth_final_pos = [0,0,0]
 venus_final_pos = [0,0,0]
 mars_final_pos = [0,0,0]
 
-fig, ax = plt.subplots(figsize=(11, 11))
+fig, ax = plt.subplots(figsize=(12, 12))
 ax.set_xlim(-plot_size, plot_size)
 ax.set_ylim(-plot_size, plot_size)
 ax.set_aspect('equal')
@@ -398,8 +398,10 @@ for _ in range(3,8):
 
 asteroid_plots = []
 
+colors = ['darkred', 'red', 'orange', 'yellow', 'limegreen']
+
 for _ in range(groups*num_asteroids):
-    plot, = ax.plot([], [], linestyle='-', color="red", label="asteroid", marker='o', markersize=asteroid_size)
+    plot, = ax.plot([], [], linestyle='-', color=colors[_], label="asteroid", marker='o', markersize=asteroid_size)
     asteroid_plots.append(plot)
     
 #ax.scatter(96697280301.42848, 114145510583.23306, color='red', marker='x')
@@ -416,7 +418,7 @@ trails = []
 
 for _ in range(groups*num_asteroids):
 
-    plot, = ax.plot([], [], linewidth=1, linestyle='-', color='red')
+    plot, = ax.plot([], [], linewidth=1, linestyle='-', color=colors[_])
     trails.append(plot)
 
 sun_circle = plt.Circle((0, 0), 1e10, facecolor='yellow', edgecolor = 'black', label='Sun')
@@ -424,9 +426,13 @@ ax.add_patch(sun_circle)
 
 
 legend_elements = [
+    Line2D([0], [0], linewidth=2, linestyle='-', color='darkred', markersize=10, label='Undiverted asteroid'),
+    Line2D([0], [0], linewidth=2, linestyle='-', color='red', markersize=10, label='15km/s diversion'),
+    Line2D([0], [0], linewidth=2, linestyle='-', color='darkorange', markersize=10, label='30km/s diversion'),
+    Line2D([0], [0], linewidth=2, linestyle='-', color='yellow', markersize=10, label='45km/s diversion'),
+    Line2D([0], [0], linewidth=2, linestyle='-', color='limegreen', markersize=10, label='60km/s diversion'),
     plt.scatter([], [], color='green', marker='o', s=100, label='Earth'),
     plt.scatter([], [], color='blue', marker='o', s=100, label='Other planets'),
-    plt.scatter([], [], color='red', marker='o', s=100, label='Asteroids'),
 ]
 
 ax.legend(handles = legend_elements, prop=legend_font, loc='upper right', bbox_to_anchor=(1,1))
@@ -525,7 +531,7 @@ animation = FuncAnimation(fig, update, frames=num_frames, interval=1, blit=False
 
 #plt.show()
 
-animation_filename = "animation3.mp4"
+animation_filename = "animation.mp4"
 animation.save(animation_filename, writer='ffmpeg', fps=60)
 
 print("\nAnimation saved successfully!")
