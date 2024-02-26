@@ -23,13 +23,13 @@ start_vel_sigma_kms = [5.25533582E-08,          1.88006672E-07,         1.096250
 sim_time = 1.627312e8
 display_time = 0.1e8
 start_time = sim_time - display_time
-step = 1000000
-num_asteroids = 1
+step = 10000
+num_asteroids = 100
 groups = 5
 t_impulse = 1e6
 num_real_coords = 100
 
-impulse_increase = [0,+11,0]
+impulse_increase = [+10,0,0]
 
 impulse = []
 
@@ -341,7 +341,7 @@ real_positions = []
 
 for i in range(num_real_coords):
 
-    real_pos = true_position(start_date_str, (i+1) * int(sim_time/num_real_coords))
+    real_pos = true_position(start_date_str, (i) * int(sim_time/num_real_coords))
     real_positions.append(real_pos)
 
     print(i,'% real coords retrieved')
@@ -547,8 +547,6 @@ for i in range(groups*num_asteroids):
 
     deviation_lists.append(deviation_list)
 
-print(deviation_lists)
-
 colors = ['darkred', 'red', 'darkorange', 'yellow', 'limegreen']
 
 def plot_positions():
@@ -556,7 +554,7 @@ def plot_positions():
     plt.figure(figsize=(8,8))
 
     plt.xlim(-1.8e11, -0.8e11)  # Convert to AU
-    plt.ylim(-1e11, 0)  # Convert to AU
+    plt.ylim(-1.2e11, 0.2e11)  # Convert to AU
 
     plt.scatter(0, 0, color='yellow', marker='o', s=50, edgecolor='black', zorder=2)
 
@@ -580,7 +578,7 @@ def plot_positions():
     for i in range(9,(groups*num_asteroids)+9):
         
         plt.scatter(bodies[i].position[0], bodies[i].position[1], marker='o', color=colors[i-9], s=20)
-        plt.plot([bodies[i].position[0], apophis_real_position[0]], [bodies[i].position[1], apophis_real_position[1]], linestyle='-', marker='+', color='b', ms=5)
+        plt.plot([bodies[i].position[0], apophis_real_position[0]], [bodies[i].position[1], apophis_real_position[1]], linestyle='-', linewidth = '0.3' ,marker='+', color='b', ms=5)
 
     for i in range(groups*num_asteroids):
 
@@ -598,7 +596,7 @@ def plot_positions():
         Line2D([0], [0], linewidth=2, linestyle='-', color='darkorange', markersize=10, label='30km/s diversion'),
         Line2D([0], [0], linewidth=2, linestyle='-', color='yellow', markersize=10, label='45km/s diversion'),
         Line2D([0], [0], linewidth=2, linestyle='-', color='limegreen', markersize=10, label='60km/s diversion'),
-        Line2D([0], [0], linewidth=2, linestyle='-', color='blue', markersize=10, label='Final position offsets'),
+        Line2D([0], [0], linewidth=1, linestyle='-', color='blue', markersize=10, label='Final position offsets'),
         Line2D([0], [0], marker='o', color='w', markerfacecolor='green', markersize=10, label='Earth'),
     ]
 
@@ -606,8 +604,6 @@ def plot_positions():
     plt.show()
 
 num_days = int(sim_time/86400)
-
-print(len(deviation_lists))
 
 def plot_clearance():
 
@@ -617,7 +613,7 @@ def plot_clearance():
 
     for i in range(9, 9 + groups*num_asteroids):
         
-        ax1.plot(days, bodies[i].clearance, linestyle='-', color=colors[i-9], marker='')
+        ax1.plot(days, bodies[i].clearance, linestyle='-', linewidth = '0.7', color=colors[i-9], marker='')
 
     legend_font = {'family': 'DejaVu Serif', 'weight': 'normal', 'size': 9}
 
@@ -625,8 +621,8 @@ def plot_clearance():
     ax1.set_ylabel("Earth clearance (10  m)", fontdict={'family': 'DejaVu Serif', 'color': 'black', 'weight': 'normal', 'size': 11})
     ax1.legend(prop = legend_font, loc = 'lower left')
 
-    impact_day = 1600
-    ax1.axvline(x=impact_day, color='red', linestyle='--', linewidth = '1')
+    #impact_day = 1833
+    #ax1.axvline(x=impact_day, color='red', linestyle='--', linewidth = '1')
 
     days = []
 
@@ -636,14 +632,16 @@ def plot_clearance():
 
     for i in range(groups*num_asteroids):
 
-        ax2.plot(days, deviation_lists[i], linestyle='-', color=colors[i], marker='o', ms='2', linewidth = '1')
+        ax2.plot(days, deviation_lists[i], linestyle='-', color=colors[i], linewidth ='0.7', marker='o', ms='1')
     
     legend_font = {'family': 'DejaVu Serif', 'weight': 'normal', 'size': 9}
 
-    ax2.set_xlabel("Time (days)", fontdict={'family': 'DejaVu Serif', 'color':  'black', 'weight': 'normal', 'size': 11})
-    ax2.set_ylabel("Undiverted asteroid deviation (10  m)", fontdict={'family': 'DejaVu Serif', 'color':  'black', 'weight': 'normal', 'size': 11})
+    ax2.set_ylim(0, 1.5e11)
 
-    impact_day2 = 1600
+    ax2.set_xlabel("Time (days)", fontdict={'family': 'DejaVu Serif', 'color':  'black', 'weight': 'normal', 'size': 11})
+    ax2.set_ylabel("Deviation (10  m)", fontdict={'family': 'DejaVu Serif', 'color':  'black', 'weight': 'normal', 'size': 11})
+
+    impact_day2 = 1833
     ax2.axvline(x=impact_day2, color='red', linestyle='--', linewidth = '1')
 
     plt.tight_layout()
@@ -660,9 +658,11 @@ for i in range(9,9+groups*num_asteroids):
 
 average_moids = calculate_average(moids)
 
-print(average_moids)
-
-print("Asteroid final position:", bodies[9].position)
+print('00kms MOID:', average_moids[0])
+print('15kms MOID:', average_moids[1])
+print('30kms MOID:', average_moids[2])
+print('45kms MOID:', average_moids[3])
+print('60kms MOID:', average_moids[4])
 
 plot_positions()
 
