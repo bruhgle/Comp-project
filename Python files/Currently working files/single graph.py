@@ -20,16 +20,18 @@ start_pos_km = [-3.568239428001128E+06,  -1.221942256530830E+08,   6.46384617018
 start_vel_kms = [3.455856810762581E+01,   4.664927896208987E+00 ,  5.690212449251899E-01]
 start_pos_sigma_km = [8.08419252E-01,          1.96500509E-01,          3.72956965E-01]
 start_vel_sigma_kms = [5.25533582E-08,          1.88006672E-07,         1.09625070E-07]
-sim_time = 1.627312e8
+sim_time = 0.1e6
 display_time = 0.1e8
 start_time = sim_time - display_time
-step = 10000
-num_asteroids = 100
+step = 1000
+num_asteroids = 1
 groups = 5
 t_impulse = 1e6
 num_real_coords = 100
 
-impulse_increase = [+10,0,0]
+impulse_increase = [0,0,0]
+
+file_name = 'moids1000zdown.npy'
 
 impulse = []
 
@@ -339,6 +341,10 @@ acceleration_list = []
 
 real_positions = []
 
+midos = []
+
+#np.save(file_name, midos)
+
 for i in range(num_real_coords):
 
     real_pos = true_position(start_date_str, (i) * int(sim_time/num_real_coords))
@@ -441,6 +447,14 @@ def time_step(time, step_size, asteroid_index, impulse, impulse_time):
     bodies[asteroid_index].past_positions = asteroid_past_positions[asteroid_index - 1]
     bodies[asteroid_index].clearance = clearance_list
     bodies[asteroid_index].separation = separation_list
+
+    #temp = np.load(file_name).tolist()
+
+    #moid = compute_moid(asteroid_index)
+
+    #temp.append(moid)
+
+    #np.save(file_name, temp)
 
 for group_index in range(groups):
     # Determine the starting index of the asteroids in the current group
@@ -553,8 +567,8 @@ def plot_positions():
 
     plt.figure(figsize=(8,8))
 
-    plt.xlim(-1.8e11, -0.8e11)  # Convert to AU
-    plt.ylim(-1.2e11, 0.2e11)  # Convert to AU
+    plt.xlim(-2.5e11, 2.5e11)  # Convert to AU
+    plt.ylim(-2.5e11, 2.5e11)  # Convert to AU
 
     plt.scatter(0, 0, color='yellow', marker='o', s=50, edgecolor='black', zorder=2)
 
@@ -578,7 +592,7 @@ def plot_positions():
     for i in range(9,(groups*num_asteroids)+9):
         
         plt.scatter(bodies[i].position[0], bodies[i].position[1], marker='o', color=colors[i-9], s=20)
-        plt.plot([bodies[i].position[0], apophis_real_position[0]], [bodies[i].position[1], apophis_real_position[1]], linestyle='-', linewidth = '0.3' ,marker='+', color='b', ms=5)
+        #plt.plot([bodies[i].position[0], apophis_real_position[0]], [bodies[i].position[1], apophis_real_position[1]], linestyle='-', linewidth = '0.3' ,marker='+', color='b', ms=5)
 
     for i in range(groups*num_asteroids):
 
@@ -591,13 +605,15 @@ def plot_positions():
     legend_font = {'family': 'DejaVu Serif', 'weight': 'normal', 'size': 9}
 
     legend_elements = [
-        Line2D([0], [0], linewidth=2, linestyle='-', color='darkred', markersize=10, label='Undiverted asteroid'),
-        Line2D([0], [0], linewidth=2, linestyle='-', color='red', markersize=10, label='15km/s diversion'),
-        Line2D([0], [0], linewidth=2, linestyle='-', color='darkorange', markersize=10, label='30km/s diversion'),
-        Line2D([0], [0], linewidth=2, linestyle='-', color='yellow', markersize=10, label='45km/s diversion'),
-        Line2D([0], [0], linewidth=2, linestyle='-', color='limegreen', markersize=10, label='60km/s diversion'),
-        Line2D([0], [0], linewidth=1, linestyle='-', color='blue', markersize=10, label='Final position offsets'),
+        #Line2D([0], [0], linewidth=2, linestyle='-', color='darkred', markersize=10, label='Undiverted asteroid'),
+        #Line2D([0], [0], linewidth=2, linestyle='-', color='red', markersize=10, label='15km/s diversion'),
+        #Line2D([0], [0], linewidth=2, linestyle='-', color='yellow', markersize=10, label='45km/s diversion'),
+        #Line2D([0], [0], linewidth=2, linestyle='-', color='darkorange', markersize=10, label='30km/s diversion'),
+        Line2D([0], [0], marker='o', color='w', markerfacecolor='limegreen', markersize=10, label='99942 Apophis'),
+        #Line2D([0], [0], linewidth=1, linestyle='-', color='blue', markersize=10, label='Final position offsets'),
         Line2D([0], [0], marker='o', color='w', markerfacecolor='green', markersize=10, label='Earth'),
+        Line2D([0], [0], marker='o', color='w', markerfacecolor='black', markersize=10, label='Planets'),
+
     ]
 
     plt.legend(handles=legend_elements, prop = legend_font, loc = 'lower left')
@@ -650,20 +666,4 @@ def plot_clearance():
 
 print(datetime_date)
 
-moids = []
-
-for i in range(9,9+groups*num_asteroids):
-
-    moids.append(compute_moid(i))
-
-average_moids = calculate_average(moids)
-
-print('00kms MOID:', average_moids[0])
-print('15kms MOID:', average_moids[1])
-print('30kms MOID:', average_moids[2])
-print('45kms MOID:', average_moids[3])
-print('60kms MOID:', average_moids[4])
-
 plot_positions()
-
-plot_clearance()
