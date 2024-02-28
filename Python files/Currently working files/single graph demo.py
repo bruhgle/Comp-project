@@ -29,7 +29,7 @@ groups = 5
 t_impulse = 1e6
 num_real_coords = 100
 
-impulse_increase = [+10,0,0]
+impulse_increase = [0,0,+10]
 
 impulse = []
 
